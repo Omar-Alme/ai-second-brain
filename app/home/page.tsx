@@ -1,14 +1,15 @@
+// app/home/page.tsx
 import { ensureUserProfile } from '@/lib/ensureUserProfile';
 
 export default async function HomePage() {
     const profile = await ensureUserProfile();
 
     if (!profile) {
-        // Shouldn't happen because Clerk protects this route,
-        // but helps TypeScript and debugging
+        // Should never happen if Clerk is protecting this route,
+        // but it's a nice fallback + debug output.
         return (
             <main className="p-8">
-                <p>Not signed in.</p>
+                <p>Not signed in / no profile created.</p>
             </main>
         );
     }
@@ -24,12 +25,7 @@ export default async function HomePage() {
             </p>
 
             <p className="text-zinc-500">
-                Current plan: <span className="font-mono">{profile.plan}</span>
-            </p>
-
-            <p className="text-zinc-500 text-sm">
-                (Later, clicking “Upgrade” will change <code>plan</code> to <code>"pro"</code>
-                and eventually call a real billing provider.)
+                Plan: <span className="font-mono">{profile.plan}</span>
             </p>
         </main>
     );
