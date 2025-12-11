@@ -1,6 +1,5 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -29,7 +28,7 @@ import {
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip"; // make sure you've added tooltip with shadcn
+} from "@/components/ui/tooltip";
 
 type MainNavItem = {
     title: string;
