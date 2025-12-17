@@ -20,7 +20,7 @@ export function ResourceCard({
         <div
             className={cn(
                 "flex h-40 flex-col justify-between rounded-xl border bg-card shadow-sm",
-                "bg-gradient-to-b from-muted/40 to-muted/10",
+                "bg-linear-to-b from-muted/40 to-muted/10",
                 "px-4 py-3 text-xs",
                 className
             )}

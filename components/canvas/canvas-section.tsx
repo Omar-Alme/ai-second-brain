@@ -9,18 +9,18 @@ import { ResourceCard } from "@/components/workspace/resource-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
-import { createNoteAction } from "@/app/workspace/notes/actions";
+import { Grid2X2, LayoutGrid, List, PlusSquare, Search } from "lucide-react";
+import { createCanvasAction } from "@/app/workspace/canvas/actions";
 
-type NoteListItem = {
+type CanvasListItem = {
     id: string;
     title: string;
     updatedAt: string;
     createdAt: string;
 };
 
-type NotesSectionProps = {
-    notes: NoteListItem[];
+type CanvasSectionProps = {
+    canvases: CanvasListItem[];
     sidebarGroups: {
         id: string;
         label: string;
@@ -28,22 +28,22 @@ type NotesSectionProps = {
     }[];
 };
 
-export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
+export function CanvasSection({ canvases, sidebarGroups }: CanvasSectionProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
 
-    const handleCreateNote = () => {
+    const handleCreateCanvas = () => {
         startTransition(async () => {
-            const id = await createNoteAction();
-            router.push(`/workspace/notes/${id}`);
+            const id = await createCanvasAction();
+            router.push(`/workspace/canvas/${id}`);
         });
     };
 
     return (
         <SectionShell
-            sectionLabel="Notes"
-            breadcrumbLabel="Notes"
-            icon={<PenSquare className="h-4 w-4" />}
+            sectionLabel="Canvas"
+            breadcrumbLabel="Canvas"
+            icon={<Grid2X2 className="h-4 w-4" />}
             showSearch={false}
             topBarRight={
                 <div className="flex items-center gap-2">
@@ -59,27 +59,27 @@ export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
                         type="button"
                         size="sm"
                         className="rounded-full px-4 text-xs font-medium"
-                        onClick={handleCreateNote}
+                        onClick={handleCreateCanvas}
                         disabled={isPending}
                     >
                         <PlusSquare className="h-4 w-4" />
-                        {isPending ? "Creating…" : "New Note"}
+                        {isPending ? "Creating…" : "New Canvas"}
                     </Button>
                 </div>
             }
             secondaryNavItems={[
                 {
                     id: "new",
-                    label: isPending ? "Creating…" : "New note",
+                    label: isPending ? "Creating…" : "New canvas",
                     icon: <PlusSquare className="h-4 w-4" />,
-                    onClick: handleCreateNote,
+                    onClick: handleCreateCanvas,
                 },
                 {
                     id: "all",
-                    label: "All notes",
-                    icon: <PenSquare className="h-4 w-4" />,
+                    label: "All canvas",
+                    icon: <Grid2X2 className="h-4 w-4" />,
                     active: true,
-                    href: "/workspace/notes",
+                    href: "/workspace/canvas",
                 },
             ]}
             secondaryListGroups={sidebarGroups}
@@ -97,12 +97,12 @@ export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
                 </div>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {notes.map((note) => (
-                    <Link key={note.id} href={`/workspace/notes/${note.id}`}>
+                {canvases.map((c) => (
+                    <Link key={c.id} href={`/workspace/canvas/${c.id}`}>
                         <ResourceCard
-                            title={note.title || "Untitled"}
-                            tagLabel="Notes"
-                            icon={<PenSquare className="h-3 w-3" />}
+                            title={c.title || "Untitled"}
+                            tagLabel="Canvas"
+                            icon={<Grid2X2 className="h-3 w-3" />}
                         />
                     </Link>
                 ))}

@@ -4,7 +4,6 @@ import { ResourceCard } from "@/components/workspace/resource-card";
 import {
     Home as HomeIcon,
     Image as ImageIcon,
-    MessageSquare,
     PenSquare,
     Grid2X2,
 } from "lucide-react";

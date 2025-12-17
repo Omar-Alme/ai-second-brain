@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 
 import prisma from "@/lib/prisma";
-import { SidebarInset } from "@/components/ui/sidebar";
 import { NotesSection } from "@/components/notes/notes-section";
 
 export const metadata: Metadata = {
@@ -31,16 +30,38 @@ export default async function NotesPage() {
         },
     });
 
+    const now = new Date().getTime();
+    const pastWeek: typeof notes = [];
+    const pastMonth: typeof notes = [];
+    const older: typeof notes = [];
+
+    for (const n of notes) {
+        const days = Math.floor((now - n.updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+        if (days <= 7) pastWeek.push(n);
+        else if (days <= 30) pastMonth.push(n);
+        else older.push(n);
+    }
+
+    const toItems = (arr: typeof notes) =>
+        arr.map((n) => ({
+            id: n.id,
+            label: n.title || "Untitled Note",
+            href: `/workspace/notes/${n.id}`,
+        }));
+
     return (
-        <SidebarInset>
-            <NotesSection
-                notes={notes.map((n) => ({
-                    id: n.id,
-                    title: n.title,
-                    updatedAt: n.updatedAt.toISOString(),
-                    createdAt: n.createdAt.toISOString(),
-                }))}
-            />
-        </SidebarInset>
+        <NotesSection
+            notes={notes.map((n) => ({
+                id: n.id,
+                title: n.title,
+                updatedAt: n.updatedAt.toISOString(),
+                createdAt: n.createdAt.toISOString(),
+            }))}
+            sidebarGroups={[
+                { id: "past-week", label: "Past week", items: toItems(pastWeek) },
+                { id: "past-month", label: "Past month", items: toItems(pastMonth) },
+                { id: "older", label: "Older", items: toItems(older) },
+            ]}
+        />
     );
 }

@@ -1,29 +1,15 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import type { JSONContent } from "@tiptap/core";
-
-// Helper to get current user's profile id
-async function getCurrentUserProfileId() {
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) throw new Error("Not authenticated");
-
-    const profile = await prisma.userProfile.findUnique({
-        where: { clerkUserId },
-        select: { id: true },
-    });
-
-    if (!profile) throw new Error("User profile not found");
-    return profile.id;
-}
+import { getCurrentProfile } from "@/lib/get-current-profile";
 
 /**
  * Create a new empty note for the current user.
  * Returns the new note id so the client can redirect.
  */
 export async function createNoteAction() {
-    const userProfileId = await getCurrentUserProfileId();
+    const profile = await getCurrentProfile();
 
     const emptyDoc: JSONContent = {
         type: "doc",
@@ -32,7 +18,7 @@ export async function createNoteAction() {
 
     const note = await prisma.note.create({
         data: {
-            userId: userProfileId,
+            userId: profile.id,
             title: "Untitled",
             content: emptyDoc,
         },
@@ -51,13 +37,13 @@ export async function updateNoteAction(input: {
     content: JSONContent;
 }) {
     const { id, title, content } = input;
-    const userProfileId = await getCurrentUserProfileId();
+    const profile = await getCurrentProfile();
 
     // Make sure the note belongs to this user
     const note = await prisma.note.findFirst({
         where: {
             id,
-            userId: userProfileId,
+            userId: profile.id,
         },
         select: { id: true },
     });
@@ -72,5 +58,21 @@ export async function updateNoteAction(input: {
             title,
             content,
         },
+    });
+}
+
+export async function deleteNoteAction(input: { id: string }) {
+    const { id } = input;
+    const profile = await getCurrentProfile();
+
+    const note = await prisma.note.findFirst({
+        where: { id, userId: profile.id },
+        select: { id: true },
+    });
+
+    if (!note) throw new Error("Note not found");
+
+    await prisma.note.delete({
+        where: { id: note.id },
     });
 }
