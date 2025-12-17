@@ -1,12 +1,14 @@
-// app/workspace/layout.tsx
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import "tldraw/tldraw.css";
+
 
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { ensureUserProfile } from "@/lib/ensureUserProfile";
+import { SidebarInset } from "@/components/ui/sidebar";
 
 export const metadata: Metadata = {
     title: "Workspace | Noma",
@@ -20,12 +22,10 @@ export default async function WorkspaceLayout({ children }: { children: ReactNod
 
     return (
         <SidebarProvider>
-            <div className="flex h-screen w-full">
-                <AppSidebar />   {/* SIDEBAR #1 */}
-                <div className="flex flex-1 overflow-hidden">
-                    {children}     {/* SIDEBAR #2 lives inside SectionShell */}
-                </div>
-            </div>
+            <AppSidebar />
+            <SidebarInset className="min-h-svh">
+                {children}
+            </SidebarInset>
         </SidebarProvider>
     );
 }
