@@ -23,32 +23,32 @@ model UserProfile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  notes       Note[]
-  canvases    Canvas[]
-  mediaFiles  MediaFile[]
-  chats       ChatSession[]
+  notes      Note[]
+  canvases   Canvas[]
+  mediaFiles MediaFile[]
+  chats      ChatSession[]
 }
 
 model Note {
   id        String   @id @default(cuid())
   userId    String
   title     String
-  content   Json     // Tiptap JSON
+  content   Json // Tiptap JSON
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      UserProfile @relation(fields: [userId], references: [id])
+  user UserProfile @relation(fields: [userId], references: [id])
 }
 
 model Canvas {
   id        String   @id @default(cuid())
   userId    String
-  title     String
-  document  Json     // tldraw document
+  title     String   @default("Untitled canvas")
+  document  Json? // tldraw document
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      UserProfile @relation(fields: [userId], references: [id])
+  user UserProfile @relation(fields: [userId], references: [id])
 }
 
 model MediaFile {
@@ -60,25 +60,25 @@ model MediaFile {
   size      Int
   createdAt DateTime @default(now())
 
-  user      UserProfile @relation(fields: [userId], references: [id])
+  user UserProfile @relation(fields: [userId], references: [id])
 }
 
 model ChatSession {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   title     String?
-  createdAt DateTime      @default(now())
+  createdAt DateTime @default(now())
 
-  user      UserProfile   @relation(fields: [userId], references: [id])
-  messages  ChatMessage[]
+  user     UserProfile   @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
 }
 
 model ChatMessage {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   sessionId String
-  role      String       // 'user' | 'assistant'
+  role      String // 'user' | 'assistant'
   content   String
-  createdAt DateTime     @default(now())
+  createdAt DateTime @default(now())
 
-  session   ChatSession  @relation(fields: [sessionId], references: [id])
+  session ChatSession @relation(fields: [sessionId], references: [id])
 }

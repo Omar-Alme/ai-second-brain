@@ -5,14 +5,15 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SidebarInset, SidebarContent } from "@/components/ui/sidebar";
-import {
-    ChevronRight,
-    PanelLeftOpen,
-    PanelLeftClose,
-    Search,
-} from "lucide-react";
+import { SidebarContent } from "@/components/ui/sidebar";
+import { ChevronRight, PanelLeftOpen, PanelLeftClose, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbList,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 type BaseItem = {
     id: string;
@@ -20,10 +21,16 @@ type BaseItem = {
     icon?: ReactNode;
     active?: boolean;
     href?: string;
+    onClick?: () => void;
 };
 
 type SecondaryNavItem = BaseItem;
 type SecondaryListItem = BaseItem;
+type SecondaryListGroup = {
+    id: string;
+    label: string;
+    items: SecondaryListItem[];
+};
 
 interface SectionShellProps {
     sectionLabel: string;
@@ -33,33 +40,53 @@ interface SectionShellProps {
     onPrimaryActionClick?: () => void;
     secondaryNavItems?: SecondaryNavItem[];
     secondaryListItems?: SecondaryListItem[];
+    secondaryListGroups?: SecondaryListGroup[];
+    secondaryFooterItems?: SecondaryNavItem[];
+    breadcrumbs?: ReactNode;
+    topBarRight?: ReactNode;
+    showSearch?: boolean;
+    contentClassName?: string;
     children: ReactNode;
 }
 
-// tiny helper to render button OR link
-function ItemButton({
+function SecondaryItem({
     item,
+    variant,
     className,
     children,
 }: {
     item: BaseItem;
+    variant: "nav" | "list";
     className?: string;
     children: ReactNode;
 }) {
-    const common = cn("flex w-full items-center gap-2", className);
+    const base = cn(
+        "w-full justify-start gap-2 rounded-md px-3 py-2 text-xs transition-colors",
+        "cursor-pointer",
+        variant === "nav"
+            ? cn(
+                "font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                item.active && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+            )
+            : cn(
+                "text-muted-foreground hover:bg-muted hover:text-foreground",
+                item.active && "bg-muted text-foreground"
+            ),
+        className
+    );
 
     if (item.href) {
         return (
-            <Link href={item.href} className={common}>
-                {children}
-            </Link>
+            <Button asChild variant="ghost" className={base}>
+                <Link href={item.href}>{children}</Link>
+            </Button>
         );
     }
 
     return (
-        <button type="button" className={common}>
+        <Button type="button" variant="ghost" className={base} onClick={item.onClick}>
             {children}
-        </button>
+        </Button>
     );
 }
 
@@ -71,127 +98,164 @@ export function SectionShell({
     onPrimaryActionClick,
     secondaryNavItems = [],
     secondaryListItems = [],
+    secondaryListGroups = [],
+    secondaryFooterItems = [],
+    breadcrumbs,
+    topBarRight,
+    showSearch = true,
+    contentClassName = "",
     children,
 }: SectionShellProps) {
     const crumb = breadcrumbLabel ?? sectionLabel;
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     return (
-        <SidebarInset>
-            <div className="flex h-screen">
-                {/* Collapsible secondary sidebar */}
-                {sidebarOpen && (
-                    <aside className="flex w-64 flex-col border-r bg-sidebar">
-                        {/* Section header */}
-                        <div className="flex h-16 items-center gap-2 border-b px-4">
+        <div className="flex min-h-svh w-full">
+            {/* Secondary sidebar */}
+            {sidebarOpen ? (
+                <aside className="flex w-64 flex-col border-r bg-sidebar">
+                    <div className="flex h-16 items-center justify-between gap-2 border-b px-4">
+                        <div className="flex min-w-0 items-center gap-2">
                             {icon && (
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground shadow-sm">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground shadow-sm">
                                     {icon}
                                 </div>
                             )}
-                            <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-sidebar-foreground">
+                            <div className="flex min-w-0 flex-col">
+                                <span className="truncate text-sm font-semibold text-sidebar-foreground">
                                     {sectionLabel}
                                 </span>
-                                <span className="text-xs text-muted-foreground">
-                                    My workspace
-                                </span>
+                                <span className="text-xs text-muted-foreground">My workspace</span>
                             </div>
                         </div>
 
-                        {/* Content: actions + list */}
-                        <SidebarContent className="flex-1 px-2 py-3">
-                            <ScrollArea className="h-full pr-1">
-                                {/* Top actions */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setSidebarOpen(false)}
+                            aria-label="Collapse sidebar"
+                        >
+                            <PanelLeftClose className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <SidebarContent className="flex-1 px-2 py-3">
+                        <div className="flex h-full min-h-0 flex-col">
+                            <ScrollArea className="min-h-0 flex-1 pr-1">
                                 {secondaryNavItems.length > 0 && (
                                     <div className="space-y-1 pb-3">
                                         {secondaryNavItems.map((item) => (
-                                            <ItemButton
-                                                key={item.id}
-                                                item={item}
-                                                className={cn(
-                                                    "rounded-md px-3 py-2 text-xs font-medium transition-colors",
-                                                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                                    item.active &&
-                                                    "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                                                )}
-                                            >
-                                                {item.icon && (
-                                                    <span className="text-muted-foreground">
-                                                        {item.icon}
-                                                    </span>
-                                                )}
-                                                <span className="truncate text-left">
-                                                    {item.label}
-                                                </span>
-                                            </ItemButton>
+                                            <SecondaryItem key={item.id} item={item} variant="nav">
+                                                {item.icon && <span className="text-muted-foreground">{item.icon}</span>}
+                                                <span className="truncate text-left">{item.label}</span>
+                                            </SecondaryItem>
                                         ))}
                                     </div>
                                 )}
 
-                                {/* Divider + list of items */}
-                                {secondaryListItems.length > 0 && (
-                                    <div className="space-y-1 border-t pt-3">
-                                        {secondaryListItems.map((item) => (
-                                            <ItemButton
-                                                key={item.id}
-                                                item={item}
-                                                className={cn(
-                                                    "rounded-md px-3 py-2 text-xs text-muted-foreground transition-colors",
-                                                    "hover:bg-muted hover:text-foreground",
-                                                    item.active && "bg-muted text-foreground"
-                                                )}
-                                            >
-                                                {item.icon && (
-                                                    <span className="text-muted-foreground">
-                                                        {item.icon}
-                                                    </span>
-                                                )}
-                                                <span className="truncate text-left">
-                                                    {item.label}
-                                                </span>
-                                            </ItemButton>
-                                        ))}
+                                {secondaryListGroups.length > 0 ? (
+                                    <div className={cn("space-y-4", secondaryNavItems.length > 0 && "border-t pt-3")}>
+                                        {secondaryListGroups.map((group) =>
+                                            group.items.length > 0 ? (
+                                                <div key={group.id} className="space-y-1">
+                                                    <div className="px-3 pb-1 text-[10px] font-medium tracking-wider text-muted-foreground/70 uppercase">
+                                                        {group.label}
+                                                    </div>
+                                                    {group.items.map((item) => (
+                                                        <SecondaryItem key={item.id} item={item} variant="list">
+                                                            {item.icon && (
+                                                                <span className="text-muted-foreground">{item.icon}</span>
+                                                            )}
+                                                            <span className="truncate text-left">{item.label}</span>
+                                                        </SecondaryItem>
+                                                    ))}
+                                                </div>
+                                            ) : null
+                                        )}
                                     </div>
+                                ) : (
+                                    secondaryListItems.length > 0 && (
+                                        <div className="space-y-1 border-t pt-3">
+                                            {secondaryListItems.map((item) => (
+                                                <SecondaryItem key={item.id} item={item} variant="list">
+                                                    {item.icon && (
+                                                        <span className="text-muted-foreground">{item.icon}</span>
+                                                    )}
+                                                    <span className="truncate text-left">{item.label}</span>
+                                                </SecondaryItem>
+                                            ))}
+                                        </div>
+                                    )
                                 )}
                             </ScrollArea>
-                        </SidebarContent>
-                    </aside>
-                )}
 
-                {/* Main content column */}
-                <div className="flex min-w-0 flex-1 flex-col bg-card">
-                    {/* Top bar */}
-                    <header className="flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-full"
-                                onClick={() => setSidebarOpen((prev) => !prev)}
-                                aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-                            >
-                                {sidebarOpen ? (
-                                    <PanelLeftClose className="h-4 w-4" />
-                                ) : (
-                                    <PanelLeftOpen className="h-4 w-4" />
-                                )}
-                            </Button>
+                            {secondaryFooterItems.length > 0 && (
+                                <div className="border-t pt-2">
+                                    {secondaryFooterItems.map((item) => (
+                                        <SecondaryItem key={item.id} item={item} variant="list">
+                                            {item.icon && <span className="text-muted-foreground">{item.icon}</span>}
+                                            <span className="truncate text-left">{item.label}</span>
+                                        </SecondaryItem>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </SidebarContent>
+                </aside>
+            ) : (
+                <aside className="flex w-12 flex-col border-r bg-sidebar">
+                    <div className="flex h-16 items-center justify-center border-b">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={() => setSidebarOpen(true)}
+                            aria-label="Expand sidebar"
+                        >
+                            <PanelLeftOpen className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </aside>
+            )}
 
-                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                                {icon && <span className="text-xs">{icon}</span>}
-                                {crumb}
-                            </span>
+            {/* Main column */}
+            <div className="flex min-w-0 flex-1 flex-col bg-card">
+                <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur">
+                    <div className="flex min-w-0 items-center gap-3">
+                        {breadcrumbs ?? (
+                            <Breadcrumb>
+                                <BreadcrumbList>
+                                    <BreadcrumbItem>
+                                        <Link href="/workspace" className="hover:text-foreground transition-colors">
+                                            Home
+                                        </Link>
+                                    </BreadcrumbItem>
+                                    {crumb !== "Home" && (
+                                        <>
+                                            <BreadcrumbSeparator />
+                                            <BreadcrumbItem>
+                                                <span className="text-foreground">{crumb}</span>
+                                            </BreadcrumbItem>
+                                        </>
+                                    )}
+                                </BreadcrumbList>
+                            </Breadcrumb>
+                        )}
 
-                            <div className="relative">
+                        {showSearch && (
+                            <div className="relative hidden md:block">
                                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     placeholder="Search your workspace..."
                                     className="h-9 w-64 bg-background pl-8 text-xs"
                                 />
                             </div>
-                        </div>
+                        )}
+                    </div>
 
+                    <div className="flex items-center gap-2">
+                        {topBarRight}
                         {primaryActionLabel && (
                             <Button
                                 size="sm"
@@ -202,11 +266,13 @@ export function SectionShell({
                                 {primaryActionLabel}
                             </Button>
                         )}
-                    </header>
+                    </div>
+                </header>
 
-                    <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
+                <div className={cn("min-h-0 flex-1 overflow-y-auto px-6 py-6", contentClassName)}>
+                    {children}
                 </div>
             </div>
-        </SidebarInset>
+        </div>
     );
 }
