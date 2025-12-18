@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Image as ImageIcon, LayoutGrid, List, MoreHorizontal, Search, Trash2, Upload } from "lucide-react";
 
 import { SectionShell } from "@/components/workspace/section-shell";
@@ -14,6 +13,9 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -47,6 +49,7 @@ type MediaItem = {
 
 type MediaSectionProps = {
     mediaFiles: MediaItem[];
+    sortOrder: "asc" | "desc";
     sidebarGroups: {
         id: string;
         label: string;
@@ -73,8 +76,9 @@ function canPreviewInline(mimeType: string) {
     return mimeType === "application/pdf" || mimeType.startsWith("image/") || mimeType.startsWith("audio/");
 }
 
-export function MediaSection({ mediaFiles, sidebarGroups }: MediaSectionProps) {
+export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSectionProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const [uploadOpen, setUploadOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -84,6 +88,7 @@ export function MediaSection({ mediaFiles, sidebarGroups }: MediaSectionProps) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const previewId = searchParams.get("preview");
+    const currentSort = searchParams.get("sort") ?? sortOrder;
 
     const selected = useMemo(
         () => (previewId ? mediaFiles.find((m) => m.id === previewId) ?? null : null),
@@ -149,25 +154,49 @@ export function MediaSection({ mediaFiles, sidebarGroups }: MediaSectionProps) {
                     </div>
                 </div>
 
-                {/* Action under search (right aligned) */}
-                <div className="mb-8 flex items-center justify-end gap-2">
-                    <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
-                            <LayoutGrid className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
-                            <List className="h-4 w-4" />
+                {/* Sort (left) + action (right) under search */}
+                <div className="mb-8 flex flex-wrap items-center justify-between gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="outline" size="sm" className="rounded-full text-xs">
+                                Sort: {currentSort === "asc" ? "Oldest" : "Newest"}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                            <DropdownMenuLabel>Order</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                value={currentSort}
+                                onValueChange={(v) => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("sort", v);
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
+                                <DropdownMenuRadioItem value="desc">Newest first</DropdownMenuRadioItem>
+                                <DropdownMenuRadioItem value="asc">Oldest first</DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <div className="flex items-center justify-end gap-2">
+                        <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
+                            <Button variant="ghost" size="icon-sm" className="rounded-full">
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon-sm" className="rounded-full">
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <Button
+                            type="button"
+                            size="sm"
+                            className="rounded-full px-4 text-xs font-medium"
+                            onClick={() => setUploadOpen(true)}
+                        >
+                            <Upload className="h-4 w-4" />
+                            Upload
                         </Button>
                     </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        className="rounded-full px-4 text-xs font-medium"
-                        onClick={() => setUploadOpen(true)}
-                    >
-                        <Upload className="h-4 w-4" />
-                        Upload
-                    </Button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -179,7 +208,9 @@ export function MediaSection({ mediaFiles, sidebarGroups }: MediaSectionProps) {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        router.replace(`/workspace/media?preview=${m.id}`);
+                                        const params = new URLSearchParams(searchParams.toString());
+                                        params.set("preview", m.id);
+                                        router.replace(`${pathname}?${params.toString()}`);
                                     }}
                                     className="w-full text-left"
                                 >
