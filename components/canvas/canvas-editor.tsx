@@ -30,6 +30,9 @@ export function CanvasEditor({
 
     const saveTimerRef = useRef<number | null>(null);
     const hydratedRef = useRef(false);
+    const initializedRef = useRef(false);
+    const lastSavedTitleRef = useRef<string>("");
+    const lastSavedSnapshotRef = useRef<string>("");
 
     useEffect(() => {
         hydratedRef.current = false;
@@ -43,10 +46,28 @@ export function CanvasEditor({
         }
 
         hydratedRef.current = true;
-    }, [editor, initialSnapshot]);
+        // Initialize baseline after hydration so we don't save immediately.
+        const baseTitle = title.trim() || "Untitled";
+        lastSavedTitleRef.current = baseTitle;
+        lastSavedSnapshotRef.current = JSON.stringify(getSnapshot(editor.store));
+        initializedRef.current = true;
+    }, [editor, initialSnapshot, title]);
 
     const scheduleSave = useCallback(() => {
         if (!editor) return;
+        if (!hydratedRef.current) return;
+
+        const nextTitle = title.trim() || "Untitled";
+        const nextSnapshot = JSON.stringify(getSnapshot(editor.store));
+
+        if (
+            initializedRef.current &&
+            nextTitle === lastSavedTitleRef.current &&
+            nextSnapshot === lastSavedSnapshotRef.current
+        ) {
+            return;
+        }
+
         if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
 
         saveTimerRef.current = window.setTimeout(() => {
@@ -55,9 +76,11 @@ export function CanvasEditor({
                     setSaveError(null);
                     await onSave({
                         id: canvasId,
-                        title: title.trim() || "Untitled",
-                        document: getSnapshot(editor.store),
+                        title: nextTitle,
+                        document: JSON.parse(nextSnapshot) as TLEditorSnapshot,
                     });
+                    lastSavedTitleRef.current = nextTitle;
+                    lastSavedSnapshotRef.current = nextSnapshot;
                     setLastSaved(new Date());
                 } catch (e) {
                     console.error(e);

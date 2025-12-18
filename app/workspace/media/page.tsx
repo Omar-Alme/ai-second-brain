@@ -1,49 +1,78 @@
-// app/workspace/media/page.tsx
-import { SectionShell } from "@/components/workspace/section-shell";
-import { ResourceCard } from "@/components/workspace/resource-card";
-import { Image as ImageIcon, Upload } from "lucide-react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 
-const mockMedia = Array.from({ length: 10 }).map((_, i) => ({
-    id: `media-${i}`,
-    title: "Test Media",
-}));
+import prisma from "@/lib/prisma";
+import { MediaSection } from "@/components/media/media-section";
 
-export default function MediaPage() {
+export const metadata: Metadata = {
+    title: "Media | Noma",
+};
+
+export default async function MediaPage({
+    searchParams,
+}: {
+    searchParams?: { preview?: string };
+}) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) notFound();
+
+    const profile = await prisma.userProfile.findUnique({
+        where: { clerkUserId },
+        select: { id: true },
+    });
+    if (!profile) notFound();
+
+    const mediaFiles = await prisma.mediaFile.findMany({
+        where: { userId: profile.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+            id: true,
+            name: true,
+            url: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
+        },
+    });
+
+    const now = new Date().getTime();
+    const pastWeek: typeof mediaFiles = [];
+    const pastMonth: typeof mediaFiles = [];
+    const older: typeof mediaFiles = [];
+
+    for (const m of mediaFiles) {
+        const days = Math.floor((now - m.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        if (days <= 7) pastWeek.push(m);
+        else if (days <= 30) pastMonth.push(m);
+        else older.push(m);
+    }
+
+    const previewId = searchParams?.preview ?? null;
+
+    const toItems = (arr: typeof mediaFiles) =>
+        arr.map((m) => ({
+            id: m.id,
+            label: m.name,
+            href: `/workspace/media?preview=${m.id}`,
+            active: previewId === m.id,
+        }));
+
     return (
-        <SectionShell
-            sectionLabel="Media"
-            breadcrumbLabel="Media"
-            icon={<ImageIcon className="h-4 w-4" />}
-            primaryActionLabel="Upload"
-            secondaryNavItems={[
-                {
-                    id: "upload",
-                    label: "Upload",
-                    icon: <Upload className="h-4 w-4" />,
-                },
-                {
-                    id: "all",
-                    label: "All Media",
-                    icon: <ImageIcon className="h-4 w-4" />,
-                    active: true,
-                },
-            ]}
-            secondaryListItems={mockMedia.map((m) => ({
+        <MediaSection
+            mediaFiles={mediaFiles.map((m) => ({
                 id: m.id,
-                label: m.title,
-                icon: <ImageIcon className="h-4 w-4" />,
+                name: m.name,
+                url: m.url,
+                mimeType: m.mimeType,
+                size: m.size,
+                createdAt: m.createdAt.toISOString(),
             }))}
-        >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {mockMedia.map((m) => (
-                    <ResourceCard
-                        key={m.id}
-                        title={m.title}
-                        tagLabel="Media"
-                        icon={<ImageIcon className="h-3 w-3" />}
-                    />
-                ))}
-            </div>
-        </SectionShell>
+            sidebarGroups={[
+                { id: "past-week", label: "Past week", items: toItems(pastWeek) },
+                { id: "past-month", label: "Past month", items: toItems(pastMonth) },
+                { id: "older", label: "Older", items: toItems(older) },
+            ]}
+        />
     );
 }

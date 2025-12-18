@@ -154,8 +154,7 @@ export function NoteDetailView(props: {
                                         startDelete(async () => {
                                             await deleteNoteAction({ id: noteId });
                                             setConfirmOpen(false);
-                                            router.push("/workspace/notes");
-                                            router.refresh();
+                                            router.replace("/workspace/notes");
                                         });
                                     }}
                                 >

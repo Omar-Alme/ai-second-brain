@@ -26,6 +26,9 @@ export function NoteEditor({ noteId, title, onTitleChange, initialContent, onSav
     const [saveError, setSaveError] = useState<string | null>(null);
 
     const saveTimerRef = useRef<number | null>(null);
+    const lastSavedTitleRef = useRef<string>("");
+    const lastSavedContentRef = useRef<string>("");
+    const initializedRef = useRef(false);
 
     const editor = useEditor({
         extensions: [
@@ -42,8 +45,30 @@ export function NoteEditor({ noteId, title, onTitleChange, initialContent, onSav
         immediatelyRender: false,
     });
 
+    // Initialize "last saved" baseline so we don't save immediately on mount/navigation.
+    useEffect(() => {
+        if (!editor || initializedRef.current) return;
+        const baseTitle = title.trim() || "Untitled";
+        const baseContent = JSON.stringify(editor.getJSON());
+        lastSavedTitleRef.current = baseTitle;
+        lastSavedContentRef.current = baseContent;
+        initializedRef.current = true;
+    }, [editor, title]);
+
     const scheduleSave = useCallback(() => {
         if (!editor) return;
+
+        const nextTitle = title.trim() || "Untitled";
+        const nextContent = JSON.stringify(editor.getJSON());
+
+        // Don't save if nothing changed.
+        if (
+            initializedRef.current &&
+            nextTitle === lastSavedTitleRef.current &&
+            nextContent === lastSavedContentRef.current
+        ) {
+            return;
+        }
 
         if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
 
@@ -53,9 +78,11 @@ export function NoteEditor({ noteId, title, onTitleChange, initialContent, onSav
                     setSaveError(null);
                     await onSave({
                         id: noteId,
-                        title: title.trim() || "Untitled",
-                        content: editor.getJSON(),
+                        title: nextTitle,
+                        content: JSON.parse(nextContent) as JSONContent,
                     });
+                    lastSavedTitleRef.current = nextTitle;
+                    lastSavedContentRef.current = nextContent;
                     setLastSaved(new Date());
                 } catch (e) {
                     console.error(e);

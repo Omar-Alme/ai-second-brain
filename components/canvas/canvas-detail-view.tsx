@@ -153,8 +153,7 @@ export function CanvasDetailView(props: {
                                         startDelete(async () => {
                                             await deleteCanvasAction({ id: canvasId });
                                             setConfirmOpen(false);
-                                            router.push("/workspace/canvas");
-                                            router.refresh();
+                                            router.replace("/workspace/canvas");
                                         });
                                     }}
                                 >

@@ -1,0 +1,166 @@
+"use server";
+
+import prisma from "@/lib/prisma";
+import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
+
+const MAX_BYTES = 15 * 1024 * 1024; // 15MB
+const ALLOWED_MIME = [
+    "application/pdf",
+] as const;
+
+function isAllowedMime(mimeType: string) {
+    if (mimeType.startsWith("image/")) return true;
+    if (mimeType.startsWith("audio/")) return true;
+    return (ALLOWED_MIME as readonly string[]).includes(mimeType);
+}
+
+function sanitizeFilename(name: string) {
+    return name
+        .trim()
+        .replace(/[^\w.\- ]+/g, "")
+        .replace(/\s+/g, "-")
+        .slice(0, 120) || "file";
+}
+
+function parseSupabasePublicObjectPath(inputUrl: string) {
+    try {
+        const u = new URL(inputUrl);
+        // matches: /storage/v1/object/public/<bucket>/<path>
+        const marker = "/storage/v1/object/public/";
+        const idx = u.pathname.indexOf(marker);
+        if (idx === -1) return null;
+        const after = u.pathname.slice(idx + marker.length);
+        const parts = after.split("/");
+        if (parts.length < 2) return null;
+        const bucket = parts[0]!;
+        const path = parts.slice(1).join("/");
+        return { bucket, path };
+    } catch {
+        return null;
+    }
+}
+
+export async function createMediaFileAction(input: {
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+}) {
+    const profile = await getCurrentProfile();
+    const name = input.name.trim();
+
+    if (!name) throw new Error("Name is required");
+    if (!input.url) throw new Error("URL is required");
+    if (!isAllowedMime(input.mimeType)) throw new Error("Unsupported file type");
+    if (!Number.isFinite(input.size) || input.size <= 0) throw new Error("Invalid file size");
+
+    return await prisma.mediaFile.create({
+        data: {
+            userId: profile.id,
+            name,
+            url: input.url,
+            mimeType: input.mimeType,
+            size: input.size,
+        },
+        select: {
+            id: true,
+            userId: true,
+            name: true,
+            url: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
+        },
+    });
+}
+
+export async function getMediaFilesAction() {
+    const profile = await getCurrentProfile();
+    return await prisma.mediaFile.findMany({
+        where: { userId: profile.id },
+        orderBy: { createdAt: "desc" },
+        select: {
+            id: true,
+            userId: true,
+            name: true,
+            url: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
+        },
+    });
+}
+
+export async function deleteMediaFileAction(input: { mediaId: string }) {
+    const profile = await getCurrentProfile();
+    const media = await prisma.mediaFile.findFirst({
+        where: { id: input.mediaId, userId: profile.id },
+        select: { id: true, url: true },
+    });
+    if (!media) throw new Error("Media file not found");
+
+    // Best-effort storage deletion (if URL looks like a Supabase public URL)
+    try {
+        const parsed = parseSupabasePublicObjectPath(media.url);
+        if (parsed) {
+            const supabase = getSupabaseAdmin();
+            await supabase.storage.from(parsed.bucket).remove([parsed.path]);
+        }
+    } catch (e) {
+        console.warn("[deleteMediaFileAction] Failed to delete from storage:", e);
+    }
+
+    await prisma.mediaFile.delete({ where: { id: media.id } });
+}
+
+export async function uploadMediaFileAction(formData: FormData) {
+    const profile = await getCurrentProfile();
+
+    const file = formData.get("file");
+    if (!(file instanceof File)) throw new Error("Missing file");
+
+    if (!isAllowedMime(file.type)) throw new Error("Unsupported file type");
+    if (file.size > MAX_BYTES) throw new Error("File too large");
+
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET ?? "media";
+    const safeName = sanitizeFilename(file.name);
+    const objectPath = `${profile.id}/${crypto.randomUUID()}-${safeName}`;
+
+    const supabase = getSupabaseAdmin();
+    const arrayBuffer = await file.arrayBuffer();
+    const body = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(objectPath, body, {
+            contentType: file.type,
+            upsert: false,
+        });
+
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+    const url = data.publicUrl;
+
+    return await prisma.mediaFile.create({
+        data: {
+            userId: profile.id,
+            name: safeName,
+            url,
+            mimeType: file.type,
+            size: file.size,
+        },
+        select: {
+            id: true,
+            userId: true,
+            name: true,
+            url: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
+        },
+    });
+}
+
+

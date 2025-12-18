@@ -11,11 +11,11 @@ export const metadata: Metadata = {
 };
 
 type NotePageProps = {
-    params: { noteId: string };
+    params: Promise<{ noteId: string }>;
 };
 
 export default async function NotePage({ params }: NotePageProps) {
-    const { noteId } = params;
+    const { noteId } = await params;
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) notFound();
 

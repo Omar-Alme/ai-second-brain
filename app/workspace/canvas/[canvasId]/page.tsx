@@ -11,11 +11,11 @@ export const metadata: Metadata = {
 };
 
 type CanvasPageProps = {
-    params: { canvasId: string };
+    params: Promise<{ canvasId: string }>;
 };
 
 export default async function CanvasEditorPage({ params }: CanvasPageProps) {
-    const { canvasId } = params;
+    const { canvasId } = await params;
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) notFound();
 
