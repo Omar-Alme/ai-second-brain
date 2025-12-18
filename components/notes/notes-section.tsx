@@ -45,28 +45,6 @@ export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
             breadcrumbLabel="Notes"
             icon={<PenSquare className="h-4 w-4" />}
             showSearch={false}
-            topBarRight={
-                <div className="flex items-center gap-2">
-                    <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
-                            <LayoutGrid className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
-                            <List className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        className="rounded-full px-4 text-xs font-medium"
-                        onClick={handleCreateNote}
-                        disabled={isPending}
-                    >
-                        <PlusSquare className="h-4 w-4" />
-                        {isPending ? "Creating…" : "New Note"}
-                    </Button>
-                </div>
-            }
             secondaryNavItems={[
                 {
                     id: "new",
@@ -96,6 +74,29 @@ export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
                     />
                 </div>
             </div>
+
+            {/* Action under search (right aligned) */}
+            <div className="mb-8 flex items-center justify-end gap-2">
+                <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
+                    <Button variant="ghost" size="icon-sm" className="rounded-full">
+                        <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" className="rounded-full">
+                        <List className="h-4 w-4" />
+                    </Button>
+                </div>
+                <Button
+                    type="button"
+                    size="sm"
+                    className="rounded-full px-4 text-xs font-medium"
+                    onClick={handleCreateNote}
+                    disabled={isPending}
+                >
+                    <PlusSquare className="h-4 w-4" />
+                    {isPending ? "Creating…" : "New Note"}
+                </Button>
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {notes.map((note) => (
                     <Link key={note.id} href={`/workspace/notes/${note.id}`}>
