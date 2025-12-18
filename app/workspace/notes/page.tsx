@@ -9,7 +9,14 @@ export const metadata: Metadata = {
     title: "Notes | Noma",
 };
 
-export default async function NotesPage() {
+export default async function NotesPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ sort?: string }>;
+}) {
+    const sp = await searchParams;
+    const sortOrder: "asc" | "desc" = sp?.sort === "asc" ? "asc" : "desc";
+
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) notFound();
 
@@ -21,7 +28,7 @@ export default async function NotesPage() {
 
     const notes = await prisma.note.findMany({
         where: { userId: userProfile.id },
-        orderBy: { updatedAt: "desc" },
+        orderBy: { updatedAt: sortOrder },
         select: {
             id: true,
             title: true,
@@ -57,6 +64,7 @@ export default async function NotesPage() {
                 updatedAt: n.updatedAt.toISOString(),
                 createdAt: n.createdAt.toISOString(),
             }))}
+            sortOrder={sortOrder}
             sidebarGroups={[
                 { id: "past-week", label: "Past week", items: toItems(pastWeek) },
                 { id: "past-month", label: "Past month", items: toItems(pastMonth) },

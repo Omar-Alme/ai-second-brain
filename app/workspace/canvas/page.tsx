@@ -10,7 +10,14 @@ export const metadata: Metadata = {
     title: "Canvas | Noma",
 };
 
-export default async function CanvasPage() {
+export default async function CanvasPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ sort?: string }>;
+}) {
+    const sp = await searchParams;
+    const sortOrder: "asc" | "desc" = sp?.sort === "asc" ? "asc" : "desc";
+
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) notFound();
 
@@ -22,7 +29,7 @@ export default async function CanvasPage() {
 
     const canvases = await prisma.canvas.findMany({
         where: { userId: userProfile.id },
-        orderBy: { updatedAt: "desc" },
+        orderBy: { updatedAt: sortOrder },
         select: {
             id: true,
             title: true,
@@ -58,6 +65,7 @@ export default async function CanvasPage() {
                 updatedAt: c.updatedAt.toISOString(),
                 createdAt: c.createdAt.toISOString(),
             }))}
+            sortOrder={sortOrder}
             sidebarGroups={[
                 { id: "past-week", label: "Past week", items: toItems(pastWeek) },
                 { id: "past-month", label: "Past month", items: toItems(pastMonth) },

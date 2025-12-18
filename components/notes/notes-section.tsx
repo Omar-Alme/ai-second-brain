@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import { SectionShell } from "@/components/workspace/section-shell";
@@ -11,6 +11,14 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
 import { createNoteAction } from "@/app/workspace/notes/actions";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type NoteListItem = {
     id: string;
@@ -21,6 +29,7 @@ type NoteListItem = {
 
 type NotesSectionProps = {
     notes: NoteListItem[];
+    sortOrder: "asc" | "desc";
     sidebarGroups: {
         id: string;
         label: string;
@@ -28,8 +37,10 @@ type NotesSectionProps = {
     }[];
 };
 
-export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
+export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionProps) {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
 
     const handleCreateNote = () => {
@@ -45,28 +56,6 @@ export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
             breadcrumbLabel="Notes"
             icon={<PenSquare className="h-4 w-4" />}
             showSearch={false}
-            topBarRight={
-                <div className="flex items-center gap-2">
-                    <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
-                            <LayoutGrid className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
-                            <List className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        className="rounded-full px-4 text-xs font-medium"
-                        onClick={handleCreateNote}
-                        disabled={isPending}
-                    >
-                        <PlusSquare className="h-4 w-4" />
-                        {isPending ? "Creating…" : "New Note"}
-                    </Button>
-                </div>
-            }
             secondaryNavItems={[
                 {
                     id: "new",
@@ -96,6 +85,53 @@ export function NotesSection({ notes, sidebarGroups }: NotesSectionProps) {
                     />
                 </div>
             </div>
+
+            {/* Sort (left) + action (right) under search */}
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="rounded-full text-xs">
+                            Sort: {sortOrder === "asc" ? "Oldest" : "Newest"}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52">
+                        <DropdownMenuLabel>Order</DropdownMenuLabel>
+                        <DropdownMenuRadioGroup
+                            value={sortOrder}
+                            onValueChange={(v) => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("sort", v);
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
+                            <DropdownMenuRadioItem value="desc">Newest first</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="asc">Oldest first</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="flex items-center justify-end gap-2">
+                    <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
+                        <Button variant="ghost" size="icon-sm" className="rounded-full">
+                            <LayoutGrid className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon-sm" className="rounded-full">
+                            <List className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-full px-4 text-xs font-medium"
+                        onClick={handleCreateNote}
+                        disabled={isPending}
+                    >
+                        <PlusSquare className="h-4 w-4" />
+                        {isPending ? "Creating…" : "New Note"}
+                    </Button>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {notes.map((note) => (
                     <Link key={note.id} href={`/workspace/notes/${note.id}`}>

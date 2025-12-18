@@ -12,8 +12,11 @@ export const metadata: Metadata = {
 export default async function MediaPage({
     searchParams,
 }: {
-    searchParams?: { preview?: string };
+    searchParams?: Promise<{ preview?: string; sort?: string }>;
 }) {
+    const sp = await searchParams;
+    const sortOrder: "asc" | "desc" = sp?.sort === "asc" ? "asc" : "desc";
+
     const { userId: clerkUserId } = await auth();
     if (!clerkUserId) notFound();
 
@@ -25,7 +28,7 @@ export default async function MediaPage({
 
     const mediaFiles = await prisma.mediaFile.findMany({
         where: { userId: profile.id },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: sortOrder },
         select: {
             id: true,
             name: true,
@@ -48,13 +51,14 @@ export default async function MediaPage({
         else older.push(m);
     }
 
-    const previewId = searchParams?.preview ?? null;
+    const previewId = sp?.preview ?? null;
+    const sortParam = sp?.sort === "asc" ? "asc" : "desc";
 
     const toItems = (arr: typeof mediaFiles) =>
         arr.map((m) => ({
             id: m.id,
             label: m.name,
-            href: `/workspace/media?preview=${m.id}`,
+            href: `/workspace/media?preview=${m.id}&sort=${sortParam}`,
             active: previewId === m.id,
         }));
 
@@ -68,6 +72,7 @@ export default async function MediaPage({
                 size: m.size,
                 createdAt: m.createdAt.toISOString(),
             }))}
+            sortOrder={sortOrder}
             sidebarGroups={[
                 { id: "past-week", label: "Past week", items: toItems(pastWeek) },
                 { id: "past-month", label: "Past month", items: toItems(pastMonth) },
