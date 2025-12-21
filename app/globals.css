@@ -123,3 +123,399 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* styles/tiptap.css (FULL) */
+
+/* =========================
+   TIPTAP / PROSEMIRROR CSS
+   Polished + modern
+   - Works with ActiveLine decoration (.is-active)
+   - Animated placeholder + end-line indicator
+   - Nice typography + blocks + tables
+   ========================= */
+
+   .ProseMirror {
+    outline: none;
+    position: relative;
+  
+    caret-color: hsl(var(--foreground));
+    word-break: break-word;
+    white-space: pre-wrap;
+  
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .ProseMirror ::selection {
+    background: color-mix(in oklab, hsl(var(--primary)) 22%, transparent);
+  }
+  
+  .ProseMirror-focused {
+    outline: none;
+  }
+  
+  /* -------------------------
+     Placeholder (first paragraph)
+     Animated placeholder + flashing cursor
+     ------------------------- */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    color: hsl(var(--muted-foreground));
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    opacity: 0.55;
+    animation: placeholder-pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes placeholder-pulse {
+    0%,
+    100% {
+      opacity: 0.28;
+    }
+    50% {
+      opacity: 0.62;
+    }
+  }
+  
+  .ProseMirror p.is-editor-empty:first-child::after {
+    content: "|";
+    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
+    animation: cursor-blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+  
+  @keyframes cursor-blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+  
+  /* -------------------------
+     End-of-doc line indicator
+     ------------------------- */
+  .ProseMirror p:last-child:empty::after,
+  .ProseMirror p:last-child.is-editor-empty::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      hsl(var(--muted-foreground)) 20%,
+      hsl(var(--muted-foreground)) 80%,
+      transparent 100%
+    );
+    opacity: 0.18;
+    margin-top: 0.6rem;
+    animation: line-indicator 2s ease-in-out infinite;
+  }
+  
+  .ProseMirror p:last-child:not(:empty):not(.is-editor-empty)::after {
+    display: none;
+  }
+  
+  @keyframes line-indicator {
+    0%,
+    100% {
+      opacity: 0.08;
+    }
+    50% {
+      opacity: 0.24;
+    }
+  }
+  
+  /* -------------------------
+     Active line highlight
+     Applied via ActiveLine extension decoration
+     ------------------------- */
+  .ProseMirror .is-active {
+    position: relative;
+  
+    /* Subtle background glow */
+    background: color-mix(in oklab, hsl(var(--primary)) 6%, transparent);
+    border-radius: 10px;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+  
+  .ProseMirror .is-active::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    top: 0.1rem;
+    bottom: 0.1rem;
+    width: 2px;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    opacity: 0.42;
+  }
+  
+  .ProseMirror .is-active.ProseMirror-selectednode {
+    background: transparent;
+  }
+  
+  /* -------------------------
+     Typography
+     ------------------------- */
+  .ProseMirror h1 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 2.25rem;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  
+  .ProseMirror h2 {
+    margin-top: 1.75rem;
+    margin-bottom: 0.85rem;
+    font-size: 1.875rem;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  
+  .ProseMirror h3 {
+    margin-top: 1.25rem;
+    margin-bottom: 0.65rem;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  
+  .ProseMirror p {
+    margin-bottom: 1rem;
+  }
+  
+  .ProseMirror h1 + p,
+  .ProseMirror h2 + p,
+  .ProseMirror h3 + p {
+    margin-top: 0.25rem;
+  }
+  
+  /* -------------------------
+     Lists
+     ------------------------- */
+  .ProseMirror ul,
+  .ProseMirror ol {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+  
+  .ProseMirror ul {
+    list-style: disc;
+  }
+  
+  .ProseMirror ol {
+    list-style: decimal;
+  }
+  
+  .ProseMirror li {
+    margin: 0.35rem 0;
+  }
+  
+  .ProseMirror li p {
+    margin: 0.35rem 0;
+  }
+  
+  .ProseMirror li > ul,
+  .ProseMirror li > ol {
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  /* -------------------------
+     Blockquote
+     ------------------------- */
+  .ProseMirror blockquote {
+    margin: 1.25rem 0;
+    padding: 0.5rem 0 0.5rem 1rem;
+    border-left: 3px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+    font-style: italic;
+  }
+  
+  /* -------------------------
+     Inline code + code block
+     ------------------------- */
+  .ProseMirror code {
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.4rem;
+    font-size: 0.9em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+  }
+  
+  .ProseMirror pre {
+    background: hsl(var(--muted));
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin: 1.25rem 0;
+    overflow-x: auto;
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .ProseMirror pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.95em;
+  }
+  
+  /* -------------------------
+     Links
+     ------------------------- */
+  .ProseMirror a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  
+  .ProseMirror a:hover {
+    text-decoration: none;
+  }
+  
+  /* -------------------------
+     Horizontal rule
+     ------------------------- */
+  .ProseMirror hr {
+    border: none;
+    border-top: 1px solid hsl(var(--border));
+    margin: 2rem 0;
+  }
+  
+  /* -------------------------
+     Images
+     ------------------------- */
+  .ProseMirror img {
+    display: block;
+    margin: 1.25rem 0;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+  }
+  
+  .ProseMirror .ProseMirror-selectednode {
+    outline: 2px solid color-mix(in oklab, hsl(var(--primary)) 55%, transparent);
+    outline-offset: 3px;
+    border-radius: 0.8rem;
+  }
+  
+  /* -------------------------
+     Tables
+     ------------------------- */
+ /* -------------------------
+   Tables (improved visibility)
+   ------------------------- */
+.ProseMirror table {
+  width: 100%;
+  margin: 1.25rem 0;
+  border-collapse: separate;      /* better control of borders */
+  border-spacing: 0;
+  table-layout: fixed;
+
+  border: 1px solid color-mix(in oklab, hsl(var(--foreground)) 18%, transparent);
+  border-radius: 0.75rem;
+  overflow: hidden;              /* rounds the corners nicely */
+}
+
+.ProseMirror table th,
+.ProseMirror table td {
+  border-right: 1px solid color-mix(in oklab, hsl(var(--foreground)) 14%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, hsl(var(--foreground)) 14%, transparent);
+  padding: 0.65rem 0.7rem;
+  vertical-align: top;
+  background: hsl(var(--background));
+}
+
+/* Remove right border on last column */
+.ProseMirror table tr > *:last-child {
+  border-right: none;
+}
+
+/* Remove bottom border on last row */
+.ProseMirror table tr:last-child > * {
+  border-bottom: none;
+}
+
+.ProseMirror table th {
+  background: color-mix(in oklab, hsl(var(--muted)) 92%, transparent);
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Selected cell overlay (more visible) */
+.ProseMirror table .selectedCell {
+  position: relative;
+}
+
+.ProseMirror table .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, hsl(var(--primary)) 18%, transparent);
+  pointer-events: none;
+}
+
+/* Column resize handle (more visible) */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: color-mix(in oklab, hsl(var(--primary)) 45%, transparent);
+  pointer-events: none;
+}
+
+  
+  @media (max-width: 640px) {
+    .ProseMirror table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+  
+  /* -------------------------
+     Gap cursor
+     ------------------------- */
+  .ProseMirror .ProseMirror-gapcursor {
+    pointer-events: none;
+  }
+  
+  .ProseMirror .ProseMirror-gapcursor:after {
+    border-top: 2px solid hsl(var(--primary));
+  }
+  
+  /* -------------------------
+     Drop cursor
+     ------------------------- */
+  .ProseMirror .ProseMirror-dropcursor {
+    pointer-events: none;
+  }
+  
+  /* -------------------------
+     Reduce motion
+     ------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .ProseMirror p.is-editor-empty:first-child::before,
+    .ProseMirror p.is-editor-empty:first-child::after,
+    .ProseMirror p:last-child:empty::after,
+    .ProseMirror p:last-child.is-editor-empty::after {
+      animation: none !important;
+    }
+  }
+  
