@@ -204,24 +204,32 @@ export function SectionShell({
                     </SidebarContent>
                 </aside>
             ) : (
-                <aside className="flex w-12 flex-col border-r bg-sidebar">
-                    <div className="flex h-16 items-center justify-center border-b">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                            onClick={() => setSidebarOpen(true)}
-                            aria-label="Expand sidebar"
-                        >
-                            <PanelLeftOpen className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </aside>
+                <>
+                    {/* Floating expand button when collapsed */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                            "fixed left-[72px] top-4 z-30 h-9 w-9 rounded-full",
+                            "bg-background/80 backdrop-blur-md border border-border/50",
+                            "shadow-lg shadow-black/10",
+                            "transition-all duration-200",
+                            "hover:bg-background hover:scale-105 hover:shadow-xl"
+                        )}
+                        onClick={() => setSidebarOpen(true)}
+                        aria-label="Expand sidebar"
+                    >
+                        <PanelLeftOpen className="h-4 w-4" />
+                    </Button>
+                </>
             )}
 
             {/* Main column */}
             <div className="flex min-w-0 flex-1 flex-col bg-card">
-                <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur">
+                <header className={cn(
+                    "sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur",
+                    sidebarOpen ? "px-6" : "pl-16 pr-6"
+                )}>
                     <div className="flex min-w-0 items-center gap-3">
                         {breadcrumbs ?? (
                             <Breadcrumb>
