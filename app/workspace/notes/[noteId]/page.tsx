@@ -66,15 +66,15 @@ export default async function NotePage({ params }: NotePageProps) {
 
     return (
         <NoteDetailView
-            noteId={note.id}
-            initialTitle={note.title ?? ""}
-            initialContent={content}
+                noteId={note.id}
+                initialTitle={note.title ?? ""}
+                initialContent={content}
             initialUpdatedAt={note.updatedAt.toISOString()}
             sidebarGroups={[
                 { id: "past-week", label: "Past week", items: toItems(pastWeek) },
                 { id: "past-month", label: "Past month", items: toItems(pastMonth) },
                 { id: "older", label: "Older", items: toItems(older) },
             ]}
-        />
+            />
     );
 }

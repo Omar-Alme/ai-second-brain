@@ -66,9 +66,9 @@ export default async function CanvasEditorPage({ params }: CanvasPageProps) {
 
     return (
         <CanvasDetailView
-            canvasId={canvas.id}
-            initialTitle={canvas.title ?? "Untitled"}
-            initialSnapshot={initialSnapshot}
+                    canvasId={canvas.id}
+                    initialTitle={canvas.title ?? "Untitled"}
+                    initialSnapshot={initialSnapshot}
             initialUpdatedAt={canvas.updatedAt.toISOString()}
             sidebarGroups={[
                 { id: "past-week", label: "Past week", items: toItems(pastWeek) },
