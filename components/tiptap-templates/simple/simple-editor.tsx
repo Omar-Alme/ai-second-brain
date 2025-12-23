@@ -64,8 +64,6 @@ import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 
-// --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
@@ -144,12 +142,6 @@ const MainToolbarContent = ({
       </ToolbarGroup>
 
       <Spacer />
-
-      {isMobile && <ToolbarSeparator />}
-
-      <ToolbarGroup>
-        <ThemeToggle />
-      </ToolbarGroup>
     </>
   )
 }
@@ -183,15 +175,20 @@ const MobileToolbarContent = ({
   </>
 )
 
-export function SimpleEditor() {
+type SimpleEditorProps = {
+  editor?: ReturnType<typeof useEditor>
+}
+
+export function SimpleEditor({ editor: externalEditor }: SimpleEditorProps = {}) {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
     "main"
   )
+  const [toolbarHeight, setToolbarHeight] = useState(0)
   const toolbarRef = useRef<HTMLDivElement>(null)
 
-  const editor = useEditor({
+  const internalEditor = useEditor({
     immediatelyRender: false,
     editorProps: {
       attributes: {
@@ -231,52 +228,70 @@ export function SimpleEditor() {
     content,
   })
 
+  const editor = externalEditor ?? internalEditor
+
+  useEffect(() => {
+    if (toolbarRef.current) {
+      const updateHeight = () => {
+        setToolbarHeight(toolbarRef.current?.getBoundingClientRect().height ?? 0)
+      }
+      updateHeight()
+      const resizeObserver = new ResizeObserver(updateHeight)
+      resizeObserver.observe(toolbarRef.current)
+      return () => resizeObserver.disconnect()
+    }
+  }, [])
+
   const rect = useCursorVisibility({
     editor,
-    overlayHeight: toolbarRef.current?.getBoundingClientRect().height ?? 0,
+    overlayHeight: toolbarHeight,
   })
 
   useEffect(() => {
     if (!isMobile && mobileView !== "main") {
-      setMobileView("main")
+      setTimeout(() => setMobileView("main"), 0)
     }
   }, [isMobile, mobileView])
 
   return (
     <div className="simple-editor-container">
-    <div className="simple-editor-wrapper">
-      <EditorContext.Provider value={{ editor }}>
-        <Toolbar
-          ref={toolbarRef}
-          style={{
-            ...(isMobile
-              ? {
-                  bottom: `calc(100% - ${height - rect.y}px)`,
-                }
-              : {}),
-          }}
-        >
-          {mobileView === "main" ? (
-            <MainToolbarContent
-              onHighlighterClick={() => setMobileView("highlighter")}
-              onLinkClick={() => setMobileView("link")}
-              isMobile={isMobile}
-            />
-          ) : (
-            <MobileToolbarContent
-              type={mobileView === "highlighter" ? "highlighter" : "link"}
-              onBack={() => setMobileView("main")}
-            />
-          )}
-        </Toolbar>
+      <div className="simple-editor-wrapper">
+        <EditorContext.Provider value={{ editor }}>
+          <div className="simple-editor-toolbar-wrapper">
+            <Toolbar
+              ref={toolbarRef}
+              variant={isMobile ? "fixed" : "floating"}
+              className="simple-editor-toolbar"
+              style={{
+                ...(isMobile
+                  ? {
+                      bottom: `calc(100% - ${height - rect.y}px)`,
+                    }
+                  : {}),
+              }}
+            >
+              {mobileView === "main" ? (
+                <MainToolbarContent
+                  onHighlighterClick={() => setMobileView("highlighter")}
+                  onLinkClick={() => setMobileView("link")}
+                  isMobile={isMobile}
+                />
+              ) : (
+                <MobileToolbarContent
+                  type={mobileView === "highlighter" ? "highlighter" : "link"}
+                  onBack={() => setMobileView("main")}
+                />
+              )}
+            </Toolbar>
+          </div>
 
-        <EditorContent
-          editor={editor}
-          role="presentation"
-          className="simple-editor-content"
-        />
-      </EditorContext.Provider>
-    </div>
+          <EditorContent
+            editor={editor}
+            role="presentation"
+            className="simple-editor-content"
+          />
+        </EditorContext.Provider>
+      </div>
     </div>
   )
 }

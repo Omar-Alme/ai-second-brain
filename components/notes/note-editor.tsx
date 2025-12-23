@@ -17,10 +17,16 @@ import { Color } from "@tiptap/extension-color";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Gapcursor from "@tiptap/extension-gapcursor";
 import Dropcursor from "@tiptap/extension-dropcursor";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
+import { Highlight } from "@tiptap/extension-highlight";
+import { Typography } from "@tiptap/extension-typography";
+import { Subscript } from "@tiptap/extension-subscript";
+import { Superscript } from "@tiptap/extension-superscript";
+import { Selection } from "@tiptap/extensions";
+import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension";
+import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
+import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils";
 
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // 🍰 Import the Simple Editor UI from the Tiptap template
@@ -41,7 +47,6 @@ function safeStringifyJSON(content: JSONContent) {
 export function NoteEditor({
   noteId,
   title,
-  onTitleChange,
   initialContent,
   onSave,
 }: NoteEditorProps) {
@@ -66,12 +71,27 @@ export function NoteEditor({
   // ——————————————————
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ 
+        heading: { levels: [1, 2, 3, 4] },
+        horizontalRule: false,
+        link: {
+          openOnClick: false,
+          enableClickSelection: true,
+        },
+      }),
       Placeholder.configure({ placeholder: "Start writing…" }),
+      HorizontalRule,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Highlight.configure({ multicolor: true }),
+      Image.configure({ allowBase64: false }),
+      Typography,
+      Superscript,
+      Subscript,
+      Selection,
       Link.configure({ openOnClick: false }),
       Underline,
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Image.configure({ allowBase64: false }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
@@ -80,6 +100,13 @@ export function NoteEditor({
       TextStyle,
       Gapcursor,
       Dropcursor.configure({ color: "hsl(var(--primary))", width: 2 }),
+      ImageUploadNode.configure({
+        accept: "image/*",
+        maxSize: MAX_FILE_SIZE,
+        limit: 3,
+        upload: handleImageUpload,
+        onError: (error) => console.error("Upload failed:", error),
+      }),
     ],
     content,
     editorProps: {
@@ -206,33 +233,9 @@ export function NoteEditor({
     };
   }, [clearSaveTimer, doSaveNow]);
 
-  const statusLabel = saveError ?? (isPending ? "Saving…" : lastSaved ? "Edited just now" : "Saved");
-
   return (
     <div className="flex h-full flex-col">
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-10 pb-24 pt-12">
-          {/* Title + status */}
-          <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{statusLabel}</span>
-          </div>
-
-          <Input
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            placeholder="Untitled"
-            className="border-none px-0 text-3xl font-serif font-semibold bg-transparent placeholder:italic"
-          />
-
-          <Separator className="my-4" />
-
-          <div className="relative rounded-lg">
-            {/* 🍰 Simple Editor UI — pass the existing editor instance */}
-            {editor && <SimpleEditor />}
-          </div>
-        </div>
-      </main>
+      {editor && <SimpleEditor editor={editor} />}
     </div>
   );
 }
