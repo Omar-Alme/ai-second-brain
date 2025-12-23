@@ -18,6 +18,7 @@ import {
   Check,
 } from "lucide-react";
 import Link from "next/link";
+import { Hero } from "@/components/landing/hero";
 
 export default function LandingPage() {
   const handleScrollTo = (id: string) => {
@@ -32,117 +33,7 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        {/* subtle background */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,hsl(var(--border))_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.25]" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl">
-          <div className="text-center space-y-8">
-            {/* pill */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white/70 px-4 py-2 text-sm text-muted-foreground shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span>Calm second brain • Notes • Canvas • AI</span>
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight max-w-4xl mx-auto">
-              Your calm space for thinking, notes, and ideas.
-            </h1>
-
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Capture thoughts, connect knowledge, and build clarity with a focused
-              workspace designed for deep thinking.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <SignedOut>
-                <Button asChild size="lg" className="w-full sm:w-auto rounded-full px-6">
-                  <Link href="/sign-up">Get Started Free</Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto rounded-full px-6 bg-white/60 backdrop-blur hover:bg-white"
-                  onClick={() => handleScrollTo("how-it-works")}
-                >
-                  See how it works
-                </Button>
-              </SignedOut>
-
-              <SignedIn>
-                <Button asChild size="lg" className="w-full sm:w-auto rounded-full px-6">
-                  <Link href="/workspace">Go to Workspace</Link>
-                </Button>
-              </SignedIn>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-sm text-muted-foreground">
-              <div className="inline-flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>No credit card</span>
-              </div>
-              <div className="h-1 w-1 rounded-full bg-border" />
-              <div className="inline-flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Fast onboarding</span>
-              </div>
-              <div className="h-1 w-1 rounded-full bg-border" />
-              <div className="inline-flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Minimal & focused</span>
-              </div>
-            </div>
-
-            {/* Mockup */}
-            <div className="pt-12">
-              <div className="mx-auto max-w-6xl rounded-3xl border border-border bg-white/60 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.25)] backdrop-blur">
-                <div className="p-3 sm:p-4">
-                  <div className="rounded-2xl border border-border bg-muted/30 overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-white/60">
-                      <div className="flex gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-border" />
-                        <span className="h-2.5 w-2.5 rounded-full bg-border" />
-                        <span className="h-2.5 w-2.5 rounded-full bg-border" />
-                      </div>
-                      <div className="ml-3 text-xs text-muted-foreground">
-                        Noma workspace preview
-                      </div>
-                    </div>
-
-                    <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 via-transparent to-primary/5 flex items-center justify-center">
-                      <div className="text-center space-y-2">
-                        <Layout className="w-14 h-14 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Drop a real screenshot later
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* tiny testimonials */}
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-                {[
-                  { quote: "Finally a notes app that feels calm.", name: "Early user" },
-                  { quote: "The canvas + notes combo is 🔥 for brainstorming.", name: "Creator" },
-                  { quote: "Clean UI. Doesn’t fight me. I love it.", name: "Student" },
-                ].map((t, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl border border-border bg-white/60 p-5 text-left shadow-sm backdrop-blur"
-                  >
-                    <p className="text-sm text-foreground/90">“{t.quote}”</p>
-                    <p className="mt-3 text-xs text-muted-foreground">{t.name}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       {/* Social proof */}
       <section className="py-12 px-4 sm:px-6 lg:px-8 border-y border-border">
