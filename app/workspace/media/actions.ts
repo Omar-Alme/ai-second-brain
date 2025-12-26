@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getBillingEntitlements } from "@/lib/billing/entitlements";
 
 const MAX_BYTES = 15 * 1024 * 1024; // 15MB
 const ALLOWED_MIME = [
@@ -47,7 +48,8 @@ export async function createMediaFileAction(input: {
     mimeType: string;
     size: number;
 }) {
-    const profile = await getCurrentProfile();
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
     const name = input.name.trim();
 
     if (!name) throw new Error("Name is required");
@@ -76,7 +78,8 @@ export async function createMediaFileAction(input: {
 }
 
 export async function getMediaFilesAction() {
-    const profile = await getCurrentProfile();
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
     return await prisma.mediaFile.findMany({
         where: { userId: profile.id },
         orderBy: { createdAt: "desc" },
@@ -93,7 +96,8 @@ export async function getMediaFilesAction() {
 }
 
 export async function deleteMediaFileAction(input: { mediaId: string }) {
-    const profile = await getCurrentProfile();
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
     const media = await prisma.mediaFile.findFirst({
         where: { id: input.mediaId, userId: profile.id },
         select: { id: true, url: true },
@@ -115,7 +119,8 @@ export async function deleteMediaFileAction(input: { mediaId: string }) {
 }
 
 export async function uploadMediaFileAction(formData: FormData) {
-    const profile = await getCurrentProfile();
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
 
     const file = formData.get("file");
     if (!(file instanceof File)) throw new Error("Missing file");

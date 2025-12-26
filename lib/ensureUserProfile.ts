@@ -1,6 +1,7 @@
 // lib/ensureUserProfile.ts
 import { currentUser } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
+import { getBillingEntitlements } from "@/lib/billing/entitlements";
 
 export async function ensureUserProfile() {
     const user = await currentUser();
@@ -13,6 +14,9 @@ export async function ensureUserProfile() {
     const clerkUserId = user.id;
 
     try {
+        const entitlements = await getBillingEntitlements();
+        const plan = entitlements.isPro ? "pro" : "free";
+
         const email =
             user.emailAddresses[0]?.emailAddress ??
             `${clerkUserId}@no-email.local`;
@@ -23,13 +27,14 @@ export async function ensureUserProfile() {
                 email,               // keep email in sync
                 name: user.fullName,
                 imageUrl: user.imageUrl,
+                plan,                // keep plan in sync with Clerk Billing
             },
             create: {
                 clerkUserId,
                 email,
                 name: user.fullName,
                 imageUrl: user.imageUrl,
-                // plan defaults to "free"
+                plan,
             },
         });
 

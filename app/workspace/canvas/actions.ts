@@ -5,9 +5,18 @@ import prisma from "@/lib/prisma";
 import type { TLEditorSnapshot } from "tldraw";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { Prisma } from "@/app/generated/prisma/client";
+import { getBillingEntitlements } from "@/lib/billing/entitlements";
 
 export async function createCanvasAction() {
-    const profile = await getCurrentProfile();
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
+
+    if (entitlements.canvasesLimit !== null) {
+        const used = await prisma.canvas.count({ where: { userId: profile.id } });
+        if (used >= entitlements.canvasesLimit) {
+            throw new Error("Free plan limit reached: upgrade to Pro for unlimited canvases.");
+        }
+    }
 
     const canvas = await prisma.canvas.create({
         data: {

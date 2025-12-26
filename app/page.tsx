@@ -15,11 +15,11 @@ import {
   PenTool,
   Wrench,
   Users,
-  Check,
   Star,
 } from "lucide-react";
 import Link from "next/link";
 import { Hero } from "@/components/landing/hero";
+import { PricingTable } from "@clerk/nextjs";
 
 export default function LandingPage() {
   return (
@@ -340,7 +340,7 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -354,93 +354,14 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Free */}
-            <div className="rounded-3xl border border-border bg-white/60 p-8 shadow-sm backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-semibold">Free</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    For getting started.
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-semibold">$0</div>
-                  <div className="text-xs text-muted-foreground">/month</div>
-                </div>
-              </div>
-
-              <ul className="mt-6 space-y-3 text-sm">
-                {["Unlimited notes", "Basic canvas", "Media uploads"].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-foreground/90">
-                    <Check className="h-4 w-4 text-primary mt-0.5" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8">
-                <SignedOut>
-                  <Button asChild className="w-full rounded-full" variant="outline">
-                    <Link href="/sign-up">Get Started</Link>
-                  </Button>
-                </SignedOut>
-                <SignedIn>
-                  <Button asChild className="w-full rounded-full" variant="outline">
-                    <Link href="/workspace">Continue</Link>
-                  </Button>
-                </SignedIn>
-              </div>
-            </div>
-
-            {/* Pro */}
-            <div className="relative rounded-3xl border-2 border-primary/60 bg-white/70 p-8 shadow-md backdrop-blur">
-              <div className="absolute top-0 right-6 -translate-y-1/2">
-                <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow">
-                  Popular
-                </span>
-              </div>
-
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-semibold">Pro</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    For daily power users.
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-semibold">$9</div>
-                  <div className="text-xs text-muted-foreground">/month</div>
-                </div>
-              </div>
-
-              <ul className="mt-6 space-y-3 text-sm">
-                {[
-                  "Everything in Free",
-                  "Advanced AI features",
-                  "Priority support",
-                  "Export options",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-foreground/90">
-                    <Check className="h-4 w-4 text-primary mt-0.5" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8">
-                <SignedOut>
-                  <Button asChild className="w-full rounded-full">
-                    <Link href="/sign-up">Get Started</Link>
-                  </Button>
-                </SignedOut>
-                <SignedIn>
-                  <Button asChild className="w-full rounded-full">
-                    <Link href="/workspace">Upgrade to Pro</Link>
-                  </Button>
-                </SignedIn>
-              </div>
-            </div>
+          <div className="rounded-3xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur sm:p-6">
+            <PricingTable
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                },
+              }}
+            />
           </div>
         </div>
       </section>

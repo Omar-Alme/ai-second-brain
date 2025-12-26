@@ -25,7 +25,8 @@ import { Superscript } from "@tiptap/extension-superscript";
 import { Selection } from "@tiptap/extensions";
 import { ImageUploadNode } from "@/components/tiptap-node/image-upload-node/image-upload-node-extension";
 import { HorizontalRule } from "@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension";
-import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils";
+import { MAX_FILE_SIZE } from "@/lib/tiptap-utils";
+import { uploadNoteImage } from "@/lib/uploads/note-image-upload";
 
 import { cn } from "@/lib/utils";
 
@@ -104,7 +105,7 @@ export function NoteEditor({
         accept: "image/*",
         maxSize: MAX_FILE_SIZE,
         limit: 3,
-        upload: handleImageUpload,
+        upload: uploadNoteImage,
         onError: (error) => console.error("Upload failed:", error),
       }),
     ],

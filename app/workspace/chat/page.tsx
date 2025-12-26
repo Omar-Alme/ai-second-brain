@@ -2,6 +2,7 @@
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
 import { MessagesSquare } from "lucide-react";
+import { AiComposer } from "@/components/chat/ai-composer";
 
 const mockChats = Array.from({ length: 10 }).map((_, i) => ({
     id: `chat-${i}`,
@@ -34,6 +35,9 @@ export default function ChatPage() {
                 icon: <MessagesSquare className="h-4 w-4" />,
             }))}
         >
+            <div className="mb-6">
+                <AiComposer />
+            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {mockChats.map((chat) => (
                     <ResourceCard

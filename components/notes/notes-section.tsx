@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -9,8 +9,10 @@ import { ResourceCard } from "@/components/workspace/resource-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
+import { GripVertical, LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
 import { createNoteAction } from "@/app/workspace/notes/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,11 +44,26 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
+    const [createError, setCreateError] = useState<string | null>(null);
+
+    const billing = useBilling();
+
+    const isCreateBlocked = useMemo(() => {
+        if (billing.status !== "ready") return false;
+        const limit = billing.entitlements?.notesLimit ?? null;
+        return limit !== null && notes.length >= limit;
+    }, [billing.entitlements?.notesLimit, billing.status, notes.length]);
 
     const handleCreateNote = () => {
+        if (isCreateBlocked) return;
         startTransition(async () => {
-            const id = await createNoteAction();
-            router.push(`/workspace/notes/${id}`);
+            try {
+                setCreateError(null);
+                const id = await createNoteAction();
+                router.push(`/workspace/notes/${id}`);
+            } catch (err) {
+                setCreateError(err instanceof Error ? err.message : "Failed to create note");
+            }
         });
     };
 
@@ -62,6 +79,10 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                     label: isPending ? "Creating…" : "New note",
                     icon: <PlusSquare className="h-4 w-4" />,
                     onClick: handleCreateNote,
+                    disabled: isCreateBlocked || isPending,
+                    disabledReason: isCreateBlocked
+                        ? "Free plan limit reached. Upgrade to Pro for unlimited notes."
+                        : undefined,
                 },
                 {
                     id: "all",
@@ -73,6 +94,20 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
             ]}
             secondaryListGroups={sidebarGroups}
         >
+            {(isCreateBlocked || createError) && (
+                <div className="mb-6 rounded-2xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-semibold">You’ve hit the Free plan limit</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {createError ?? "Upgrade to Pro for unlimited notes, canvases, and higher AI limits."}
+                            </p>
+                        </div>
+                        <UpgradeToProButton className="rounded-full">Upgrade</UpgradeToProButton>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-6 flex items-center gap-3 border-b pb-6">
                 <div className="relative w-full max-w-2xl">
                     <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
@@ -124,7 +159,12 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                         size="sm"
                         className="rounded-full px-4 text-xs font-medium"
                         onClick={handleCreateNote}
-                        disabled={isPending}
+                        disabled={isPending || isCreateBlocked}
+                        title={
+                            isCreateBlocked
+                                ? "Free plan limit reached. Upgrade to Pro for unlimited notes."
+                                : undefined
+                        }
                     >
                         <PlusSquare className="h-4 w-4" />
                         {isPending ? "Creating…" : "New Note"}
@@ -135,11 +175,34 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {notes.map((note) => (
                     <Link key={note.id} href={`/workspace/notes/${note.id}`}>
-                        <ResourceCard
-                            title={note.title || "Untitled"}
-                            tagLabel="Notes"
-                            icon={<PenSquare className="h-3 w-3" />}
-                        />
+                        <div className="group relative">
+                            <ResourceCard
+                                title={note.title || "Untitled"}
+                                tagLabel="Notes"
+                                icon={<PenSquare className="h-3 w-3" />}
+                                className="pr-9"
+                            />
+
+                            {/* Drag handle affordance (visual only for now) */}
+                            <button
+                                type="button"
+                                aria-label="Reorder note (coming soon)"
+                                title="Drag to reorder (coming soon)"
+                                className={cn(
+                                    "absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md",
+                                    "text-muted-foreground/70 hover:text-foreground",
+                                    "bg-background/70 backdrop-blur border border-border/60 shadow-sm",
+                                    "opacity-0 group-hover:opacity-100 transition-opacity",
+                                    "cursor-grab active:cursor-grabbing"
+                                )}
+                                onClick={(e) => {
+                                    // Prevent navigation; this is only an affordance until ordering is implemented.
+                                    e.preventDefault();
+                                }}
+                            >
+                                <GripVertical className="h-4 w-4" />
+                            </button>
+                        </div>
                     </Link>
                 ))}
             </div>

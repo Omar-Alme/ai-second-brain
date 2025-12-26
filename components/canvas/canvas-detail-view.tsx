@@ -17,6 +17,8 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createCanvasAction, deleteCanvasAction, updateCanvasAction } from "@/app/workspace/canvas/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -68,6 +70,9 @@ export function CanvasDetailView(props: {
     const [editedAt, setEditedAt] = useState(() => new Date(initialUpdatedAt));
     const [nowMs, setNowMs] = useState<number | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const billing = useBilling();
+    const [limitOpen, setLimitOpen] = useState(false);
+    const [limitText, setLimitText] = useState<string | null>(null);
 
     useEffect(() => {
         const tick = () => setNowMs(new Date().getTime());
@@ -82,6 +87,13 @@ export function CanvasDetailView(props: {
     }, [editedAt, nowMs]);
 
     return (
+        <>
+            <LimitReachedDialog
+                open={limitOpen}
+                onOpenChange={setLimitOpen}
+                title="Limit reached"
+                description={limitText ?? undefined}
+            />
         <SectionShell
             sectionLabel="Canvas"
             breadcrumbLabel="Canvas"
@@ -172,8 +184,22 @@ export function CanvasDetailView(props: {
                     icon: <PlusSquare className="h-4 w-4" />,
                     onClick: () => {
                         startTransition(async () => {
-                            const id = await createCanvasAction();
-                            router.push(`/workspace/canvas/${id}`);
+                            try {
+                                const limit = billing.entitlements?.canvasesLimit ?? null;
+                                const used = billing.usage?.canvasesUsed ?? 0;
+                                const isBlocked = billing.status === "ready" && limit !== null && used >= limit;
+                                if (isBlocked) {
+                                    setLimitText("You’ve reached the Free plan canvas limit. Upgrade to Pro for unlimited canvases.");
+                                    setLimitOpen(true);
+                                    return;
+                                }
+
+                                const id = await createCanvasAction();
+                                router.push(`/workspace/canvas/${id}`);
+                            } catch (err) {
+                                setLimitText(err instanceof Error ? err.message : "You’ve reached your plan limit.");
+                                setLimitOpen(true);
+                            }
                         });
                     },
                 },
@@ -199,6 +225,7 @@ export function CanvasDetailView(props: {
                 />
             </div>
         </SectionShell>
+        </>
     );
 }
 
