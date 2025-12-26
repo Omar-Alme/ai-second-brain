@@ -9,7 +9,7 @@ import { ResourceCard } from "@/components/workspace/resource-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
+import { GripVertical, LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
 import { createNoteAction } from "@/app/workspace/notes/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
@@ -175,11 +175,34 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {notes.map((note) => (
                     <Link key={note.id} href={`/workspace/notes/${note.id}`}>
-                        <ResourceCard
-                            title={note.title || "Untitled"}
-                            tagLabel="Notes"
-                            icon={<PenSquare className="h-3 w-3" />}
-                        />
+                        <div className="group relative">
+                            <ResourceCard
+                                title={note.title || "Untitled"}
+                                tagLabel="Notes"
+                                icon={<PenSquare className="h-3 w-3" />}
+                                className="pr-9"
+                            />
+
+                            {/* Drag handle affordance (visual only for now) */}
+                            <button
+                                type="button"
+                                aria-label="Reorder note (coming soon)"
+                                title="Drag to reorder (coming soon)"
+                                className={cn(
+                                    "absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md",
+                                    "text-muted-foreground/70 hover:text-foreground",
+                                    "bg-background/70 backdrop-blur border border-border/60 shadow-sm",
+                                    "opacity-0 group-hover:opacity-100 transition-opacity",
+                                    "cursor-grab active:cursor-grabbing"
+                                )}
+                                onClick={(e) => {
+                                    // Prevent navigation; this is only an affordance until ordering is implemented.
+                                    e.preventDefault();
+                                }}
+                            >
+                                <GripVertical className="h-4 w-4" />
+                            </button>
+                        </div>
                     </Link>
                 ))}
             </div>

@@ -24,12 +24,13 @@ export async function createNoteAction() {
         type: "doc",
         content: [{ type: "paragraph" }],
     };
+    const jsonDoc = JSON.parse(JSON.stringify(emptyDoc)) as JSONContent;
 
     const note = await prisma.note.create({
         data: {
             userId: profile.id,
             title: "Untitled",
-            content: emptyDoc,
+            content: jsonDoc,
         },
         select: { id: true },
     });
@@ -47,6 +48,7 @@ export async function updateNoteAction(input: {
 }) {
     const { id, title, content } = input;
     const profile = await getCurrentProfile();
+    const jsonContent = JSON.parse(JSON.stringify(content)) as JSONContent;
 
     // Make sure the note belongs to this user
     const note = await prisma.note.findFirst({
@@ -65,7 +67,7 @@ export async function updateNoteAction(input: {
         where: { id: note.id },
         data: {
             title,
-            content,
+            content: jsonContent,
         },
     });
 }

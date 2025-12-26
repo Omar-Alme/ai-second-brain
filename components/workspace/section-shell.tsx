@@ -119,10 +119,10 @@ export function SectionShell({
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     return (
-        <div className="flex min-h-svh w-full">
+        <div className="flex h-svh w-full overflow-hidden">
             {/* Secondary sidebar */}
             {sidebarOpen ? (
-                <aside className="flex w-64 flex-col border-r bg-sidebar">
+                <aside className="flex h-svh w-64 flex-col border-r bg-sidebar">
                     <div className="flex h-16 items-center justify-between gap-2 border-b px-4">
                         <div className="flex min-w-0 items-center gap-2">
                             {icon && (
