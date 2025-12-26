@@ -36,6 +36,8 @@ import {
 import { createNoteAction } from "@/app/workspace/notes/actions";
 import { createCanvasAction } from "@/app/workspace/canvas/actions";
 import { uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 
 type WorkspaceKind = "Notes" | "Canvas" | "Media";
 type FilterKind = "all" | WorkspaceKind;
@@ -89,6 +91,9 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isCreating, startCreate] = useTransition();
     const [isUploading, startUpload] = useTransition();
+    const billing = useBilling();
+    const [limitOpen, setLimitOpen] = useState(false);
+    const [limitText, setLimitText] = useState<string | null>(null);
 
     const visibleItems = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -141,6 +146,12 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
 
     return (
         <>
+            <LimitReachedDialog
+                open={limitOpen}
+                onOpenChange={setLimitOpen}
+                title="Limit reached"
+                description={limitText ?? undefined}
+            />
             <SectionShell
                 sectionLabel="Home"
                 breadcrumbLabel="Home"
@@ -204,8 +215,25 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             disabled={isCreating}
                             onClick={() => {
                                 startCreate(async () => {
-                                    const id = await createNoteAction();
-                                    router.push(`/workspace/notes/${id}`);
+                                    try {
+                                        const limit = billing.entitlements?.notesLimit ?? null;
+                                        const used = billing.usage?.notesUsed ?? 0;
+                                        const isBlocked = billing.status === "ready" && limit !== null && used >= limit;
+
+                                        if (isBlocked) {
+                                            setLimitText("You’ve reached the Free plan note limit. Upgrade to Pro for unlimited notes.");
+                                            setLimitOpen(true);
+                                            return;
+                                        }
+
+                                        const id = await createNoteAction();
+                                        router.push(`/workspace/notes/${id}`);
+                                    } catch (err) {
+                                        setLimitText(
+                                            err instanceof Error ? err.message : "You’ve reached your plan limit."
+                                        );
+                                        setLimitOpen(true);
+                                    }
                                 });
                             }}
                         >
@@ -221,8 +249,25 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             disabled={isCreating}
                             onClick={() => {
                                 startCreate(async () => {
-                                    const id = await createCanvasAction();
-                                    router.push(`/workspace/canvas/${id}`);
+                                    try {
+                                        const limit = billing.entitlements?.canvasesLimit ?? null;
+                                        const used = billing.usage?.canvasesUsed ?? 0;
+                                        const isBlocked = billing.status === "ready" && limit !== null && used >= limit;
+
+                                        if (isBlocked) {
+                                            setLimitText("You’ve reached the Free plan canvas limit. Upgrade to Pro for unlimited canvases.");
+                                            setLimitOpen(true);
+                                            return;
+                                        }
+
+                                        const id = await createCanvasAction();
+                                        router.push(`/workspace/canvas/${id}`);
+                                    } catch (err) {
+                                        setLimitText(
+                                            err instanceof Error ? err.message : "You’ve reached your plan limit."
+                                        );
+                                        setLimitOpen(true);
+                                    }
                                 });
                             }}
                         >
@@ -236,6 +281,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             variant="outline"
                             className="rounded-full text-xs"
                             onClick={() => {
+                                const storageBlocked =
+                                    billing.status === "ready" &&
+                                    (billing.usage?.storageUsedBytes ?? 0) >=
+                                        (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
+
+                                if (storageBlocked) {
+                                    setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+                                    setLimitOpen(true);
+                                    return;
+                                }
                                 setUploadError(null);
                                 setUploadOpen(true);
                             }}
@@ -296,6 +351,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            const storageBlocked =
+                                billing.status === "ready" &&
+                                (billing.usage?.storageUsedBytes ?? 0) >=
+                                    (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
+                            if (storageBlocked) {
+                                setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+                                setLimitOpen(true);
+                                e.currentTarget.value = "";
+                                return;
+                            }
 
                             const formData = new FormData();
                             formData.set("file", file);
@@ -326,6 +391,15 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             e.preventDefault();
                             const file = e.dataTransfer.files?.[0];
                             if (!file) return;
+                            const storageBlocked =
+                                billing.status === "ready" &&
+                                (billing.usage?.storageUsedBytes ?? 0) >=
+                                    (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
+                            if (storageBlocked) {
+                                setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+                                setLimitOpen(true);
+                                return;
+                            }
                             const formData = new FormData();
                             formData.set("file", file);
                             setUploadError(null);

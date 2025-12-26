@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Grid2X2, LayoutGrid, List, PlusSquare, Search } from "lucide-react";
 import { createCanvasAction } from "@/app/workspace/canvas/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,11 +44,26 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
+    const [createError, setCreateError] = useState<string | null>(null);
+
+    const billing = useBilling();
+
+    const isCreateBlocked = useMemo(() => {
+        if (billing.status !== "ready") return false;
+        const limit = billing.entitlements?.canvasesLimit ?? null;
+        return limit !== null && canvases.length >= limit;
+    }, [billing.entitlements?.canvasesLimit, billing.status, canvases.length]);
 
     const handleCreateCanvas = () => {
+        if (isCreateBlocked) return;
         startTransition(async () => {
-            const id = await createCanvasAction();
-            router.push(`/workspace/canvas/${id}`);
+            try {
+                setCreateError(null);
+                const id = await createCanvasAction();
+                router.push(`/workspace/canvas/${id}`);
+            } catch (err) {
+                setCreateError(err instanceof Error ? err.message : "Failed to create canvas");
+            }
         });
     };
 
@@ -62,6 +79,10 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                     label: isPending ? "Creating…" : "New canvas",
                     icon: <PlusSquare className="h-4 w-4" />,
                     onClick: handleCreateCanvas,
+                    disabled: isCreateBlocked || isPending,
+                    disabledReason: isCreateBlocked
+                        ? "Free plan limit reached. Upgrade to Pro for unlimited canvases."
+                        : undefined,
                 },
                 {
                     id: "all",
@@ -73,6 +94,20 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
             ]}
             secondaryListGroups={sidebarGroups}
         >
+            {(isCreateBlocked || createError) && (
+                <div className="mb-6 rounded-2xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-semibold">You’ve hit the Free plan limit</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {createError ?? "Upgrade to Pro for unlimited canvases and higher AI limits."}
+                            </p>
+                        </div>
+                        <UpgradeToProButton className="rounded-full">Upgrade</UpgradeToProButton>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-6 flex items-center gap-3 border-b pb-6">
                 <div className="relative w-full max-w-2xl">
                     <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
@@ -124,7 +159,12 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                         size="sm"
                         className="rounded-full px-4 text-xs font-medium"
                         onClick={handleCreateCanvas}
-                        disabled={isPending}
+                        disabled={isPending || isCreateBlocked}
+                        title={
+                            isCreateBlocked
+                                ? "Free plan limit reached. Upgrade to Pro for unlimited canvases."
+                                : undefined
+                        }
                     >
                         <PlusSquare className="h-4 w-4" />
                         {isPending ? "Creating…" : "New Canvas"}

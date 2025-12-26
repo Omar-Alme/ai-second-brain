@@ -37,6 +37,8 @@ import {
 } from "@/components/ui/dialog";
 
 import { deleteMediaFileAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 
 type MediaItem = {
     id: string;
@@ -86,6 +88,9 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
     const [isDeleting, startDelete] = useTransition();
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const billing = useBilling();
+    const [limitOpen, setLimitOpen] = useState(false);
+    const [limitText, setLimitText] = useState<string | null>(null);
 
     const previewId = searchParams.get("preview");
     const currentSort = searchParams.get("sort") ?? sortOrder;
@@ -101,6 +106,17 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
     );
 
     const onPickFile = (file: File) => {
+        const storageBlocked =
+            billing.status === "ready" &&
+            (billing.usage?.storageUsedBytes ?? 0) >=
+                (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
+
+        if (storageBlocked) {
+            setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+            setLimitOpen(true);
+            return;
+        }
+
         const formData = new FormData();
         formData.set("file", file);
         setUploadError(null);
@@ -119,6 +135,12 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
 
     return (
         <>
+            <LimitReachedDialog
+                open={limitOpen}
+                onOpenChange={setLimitOpen}
+                title="Storage limit reached"
+                description={limitText ?? undefined}
+            />
             <SectionShell
                 sectionLabel="Media"
                 breadcrumbLabel="Media"
@@ -129,7 +151,20 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                         id: "upload",
                         label: "Upload",
                         icon: <Upload className="h-4 w-4" />,
-                        onClick: () => setUploadOpen(true),
+                        onClick: () => {
+                            const storageBlocked =
+                                billing.status === "ready" &&
+                                (billing.usage?.storageUsedBytes ?? 0) >=
+                                    (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
+
+                            if (storageBlocked) {
+                                setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+                                setLimitOpen(true);
+                                return;
+                            }
+
+                            setUploadOpen(true);
+                        },
                     },
                     {
                         id: "all",
@@ -191,7 +226,20 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                             type="button"
                             size="sm"
                             className="rounded-full px-4 text-xs font-medium"
-                            onClick={() => setUploadOpen(true)}
+                            onClick={() => {
+                                const storageBlocked =
+                                    billing.status === "ready" &&
+                                    (billing.usage?.storageUsedBytes ?? 0) >=
+                                        (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
+
+                                if (storageBlocked) {
+                                    setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+                                    setLimitOpen(true);
+                                    return;
+                                }
+
+                                setUploadOpen(true);
+                            }}
                         >
                             <Upload className="h-4 w-4" />
                             Upload

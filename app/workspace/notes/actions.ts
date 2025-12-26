@@ -3,13 +3,22 @@
 import prisma from "@/lib/prisma";
 import type { JSONContent } from "@tiptap/core";
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getBillingEntitlements } from "@/lib/billing/entitlements";
 
 /**
  * Create a new empty note for the current user.
  * Returns the new note id so the client can redirect.
  */
 export async function createNoteAction() {
-    const profile = await getCurrentProfile();
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
+
+    if (entitlements.notesLimit !== null) {
+        const used = await prisma.note.count({ where: { userId: profile.id } });
+        if (used >= entitlements.notesLimit) {
+            throw new Error("Free plan limit reached: upgrade to Pro for unlimited notes.");
+        }
+    }
 
     const emptyDoc: JSONContent = {
         type: "doc",

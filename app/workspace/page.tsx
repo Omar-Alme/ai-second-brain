@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { HomeFeed } from "@/components/workspace/home-feed";
+import { getBillingEntitlements } from "@/lib/billing/entitlements";
 
 function mediaKindLabel(mimeType: string) {
     if (mimeType === "application/pdf") return "PDF";
@@ -14,7 +15,8 @@ function mediaKindLabel(mimeType: string) {
 export default async function WorkspaceHomePage() {
     let profile: Awaited<ReturnType<typeof getCurrentProfile>>;
     try {
-        profile = await getCurrentProfile();
+        const entitlements = await getBillingEntitlements();
+        profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
     } catch {
         notFound();
     }

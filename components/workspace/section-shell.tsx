@@ -22,6 +22,8 @@ type BaseItem = {
     active?: boolean;
     href?: string;
     onClick?: () => void;
+    disabled?: boolean;
+    disabledReason?: string;
 };
 
 type SecondaryNavItem = BaseItem;
@@ -62,7 +64,7 @@ function SecondaryItem({
 }) {
     const base = cn(
         "w-full justify-start gap-2 rounded-md px-3 py-2 text-xs transition-colors",
-        "cursor-pointer",
+        item.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         variant === "nav"
             ? cn(
                 "font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -75,7 +77,7 @@ function SecondaryItem({
         className
     );
 
-    if (item.href) {
+    if (item.href && !item.disabled) {
         return (
             <Button asChild variant="ghost" className={base}>
                 <Link href={item.href}>{children}</Link>
@@ -84,7 +86,14 @@ function SecondaryItem({
     }
 
     return (
-        <Button type="button" variant="ghost" className={base} onClick={item.onClick}>
+        <Button
+            type="button"
+            variant="ghost"
+            className={base}
+            onClick={item.onClick}
+            disabled={item.disabled}
+            title={item.disabled ? item.disabledReason : undefined}
+        >
             {children}
         </Button>
     );

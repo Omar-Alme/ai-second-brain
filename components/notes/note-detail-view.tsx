@@ -17,6 +17,8 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createNoteAction, deleteNoteAction, updateNoteAction } from "@/app/workspace/notes/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -68,6 +70,9 @@ export function NoteDetailView(props: {
     const [editedAt, setEditedAt] = useState(() => new Date(initialUpdatedAt));
     const [nowMs, setNowMs] = useState<number | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const billing = useBilling();
+    const [limitOpen, setLimitOpen] = useState(false);
+    const [limitText, setLimitText] = useState<string | null>(null);
 
     useEffect(() => {
         // keep renders pure; update "now" in an effect
@@ -83,6 +88,13 @@ export function NoteDetailView(props: {
     }, [editedAt, nowMs]);
 
     return (
+        <>
+            <LimitReachedDialog
+                open={limitOpen}
+                onOpenChange={setLimitOpen}
+                title="Limit reached"
+                description={limitText ?? undefined}
+            />
         <SectionShell
             sectionLabel="Notes"
             breadcrumbLabel="Notes"
@@ -173,8 +185,22 @@ export function NoteDetailView(props: {
                     icon: <PlusSquare className="h-4 w-4" />,
                     onClick: () => {
                         startTransition(async () => {
-                            const id = await createNoteAction();
-                            router.push(`/workspace/notes/${id}`);
+                            try {
+                                const limit = billing.entitlements?.notesLimit ?? null;
+                                const used = billing.usage?.notesUsed ?? 0;
+                                const isBlocked = billing.status === "ready" && limit !== null && used >= limit;
+                                if (isBlocked) {
+                                    setLimitText("You’ve reached the Free plan note limit. Upgrade to Pro for unlimited notes.");
+                                    setLimitOpen(true);
+                                    return;
+                                }
+
+                                const id = await createNoteAction();
+                                router.push(`/workspace/notes/${id}`);
+                            } catch (err) {
+                                setLimitText(err instanceof Error ? err.message : "You’ve reached your plan limit.");
+                                setLimitOpen(true);
+                            }
                         });
                     },
                 },
@@ -199,6 +225,7 @@ export function NoteDetailView(props: {
                 }}
             />
         </SectionShell>
+        </>
     );
 }
 
