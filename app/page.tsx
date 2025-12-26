@@ -1,8 +1,8 @@
 "use client";
 
-import { SignedIn, SignedOut } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/landing/navbar";
+import { Button } from "@/components/ui/button";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import {
   Brain,
   FileText,
@@ -16,38 +16,63 @@ import {
   Wrench,
   Users,
   Check,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { Hero } from "@/components/landing/hero";
 
 export default function LandingPage() {
-  const handleScrollTo = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen bg-background text-foreground">
+      {/* Page background glow (kept behind Hero canvas) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
+        <div className="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute top-[30rem] -left-32 h-[520px] w-[520px] rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute bottom-[-12rem] -right-40 h-[520px] w-[520px] rounded-full bg-primary/10 blur-3xl" />
+      </div>
+
       <Navbar />
 
       {/* Hero */}
       <Hero />
 
       {/* Social proof */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 border-y border-border">
+      <section className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-sm text-muted-foreground">
-              Built for focused creators, students, and builders.
-            </p>
+          <div className="rounded-3xl border border-border bg-white/60 px-6 py-8 shadow-sm backdrop-blur md:px-10">
+            <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span>Built for focused creators</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  A calm workspace for deep work, research, projects, and learning.
+                </p>
+              </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="grid w-full max-w-md grid-cols-3 gap-3">
+                {[
+                  { label: "Notes", value: "Unlimited" },
+                  { label: "Canvas", value: "Visual" },
+                  { label: "AI", value: "On-demand" },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-2xl border border-border bg-white/60 p-4 text-center shadow-xs"
+                  >
+                    <div className="text-sm font-semibold">{s.value}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-2">
               {["Deep work", "Research", "Projects", "Learning", "Writing"].map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border bg-muted/30 px-3 py-1 text-xs text-muted-foreground"
+                  className="rounded-full border border-border bg-white/60 px-3 py-1 text-xs text-muted-foreground"
                 >
                   {tag}
                 </span>
@@ -61,6 +86,10 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Product</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
               Everything you need to think clearly
             </h2>
@@ -98,8 +127,11 @@ export default function LandingPage() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="group rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow"
+                className="group relative overflow-hidden rounded-3xl border border-border bg-white/60 p-6 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
+                <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-primary/10 blur-2xl" />
+                </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <feature.icon className="w-6 h-6 text-primary" />
                 </div>
@@ -121,6 +153,10 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Workflow</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
               How it works
             </h2>
@@ -155,7 +191,7 @@ export default function LandingPage() {
             ].map((step, index) => (
               <div
                 key={index}
-                className="rounded-2xl border border-border bg-white/60 p-6 text-center shadow-sm backdrop-blur"
+                className="rounded-3xl border border-border bg-white/60 p-6 text-center shadow-sm backdrop-blur"
               >
                 <div className="mx-auto mb-4 inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-semibold">
                   {step.step}
@@ -170,9 +206,17 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 max-w-5xl mx-auto">
-            <div className="rounded-2xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
-              <div className="aspect-video rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 flex items-center justify-center">
-                <p className="text-sm text-muted-foreground">Workflow visual</p>
+            <div className="rounded-3xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+              <div className="relative aspect-video overflow-hidden rounded-2xl bg-linear-to-r from-primary/5 via-transparent to-primary/10">
+                <div aria-hidden className="absolute inset-0">
+                  <div className="absolute left-6 top-6 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
+                  <div className="absolute left-32 top-16 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
+                  <div className="absolute left-60 top-10 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
+                  <div className="absolute right-8 bottom-10 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-sm text-muted-foreground">Your workspace, visualized</p>
+                </div>
               </div>
             </div>
           </div>
@@ -183,6 +227,10 @@ export default function LandingPage() {
       <section id="product" className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Use cases</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
               Built for everyone who thinks
             </h2>
@@ -217,7 +265,7 @@ export default function LandingPage() {
             ].map((useCase, index) => (
               <div
                 key={index}
-                className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-3xl border border-border bg-white/60 p-6 text-center shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
                   <useCase.icon className="w-6 h-6 text-primary" />
@@ -230,10 +278,74 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Loved by focused teams</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
+              Calm, consistent, and fast
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              A second brain that feels lightweight — but stays powerful as your system grows.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote:
+                  "Finally a workspace that keeps me focused. Notes + canvas + AI feels seamless.",
+                name: "Amina",
+                role: "Product Designer",
+              },
+              {
+                quote:
+                  "I can capture quickly, then connect everything later. It’s the calmest tool I’ve tried.",
+                name: "Omar",
+                role: "Student",
+              },
+              {
+                quote:
+                  "The UI stays out of the way. I spend more time thinking and less time organizing.",
+                name: "Sara",
+                role: "Engineer",
+              },
+            ].map((t) => (
+              <div
+                key={t.name}
+                className="rounded-3xl border border-border bg-white/60 p-6 shadow-sm backdrop-blur"
+              >
+                <div className="flex items-center gap-1 text-primary/80">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary/20" />
+                  ))}
+                </div>
+                <p className="mt-4 text-sm text-foreground/90">“{t.quote}”</p>
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10" />
+                  <div className="leading-tight">
+                    <div className="text-sm font-semibold">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing */}
       <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Pricing</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4">
               Simple, transparent pricing
             </h2>
@@ -244,7 +356,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Free */}
-            <div className="rounded-2xl border border-border bg-white/60 p-8 shadow-sm backdrop-blur">
+            <div className="rounded-3xl border border-border bg-white/60 p-8 shadow-sm backdrop-blur">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-semibold">Free</h3>
@@ -282,7 +394,7 @@ export default function LandingPage() {
             </div>
 
             {/* Pro */}
-            <div className="relative rounded-2xl border-2 border-primary/60 bg-white/70 p-8 shadow-md backdrop-blur">
+            <div className="relative rounded-3xl border-2 border-primary/60 bg-white/70 p-8 shadow-md backdrop-blur">
               <div className="absolute top-0 right-6 -translate-y-1/2">
                 <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow">
                   Popular

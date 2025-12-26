@@ -1,234 +1,229 @@
-// @ts-ignore
-function n(e) {
-    // @ts-ignore
-    this.init(e || {});
+type CanvasCtx = CanvasRenderingContext2D & {
+  running?: boolean
+  frame?: number
+}
+
+type Vec2 = { x: number; y: number }
+
+type Settings = {
+  friction: number
+  trails: number
+  size: number
+  dampening: number
+  tension: number
+}
+
+const SETTINGS: Settings = {
+  friction: 0.5,
+  trails: 80,
+  size: 50,
+  dampening: 0.025,
+  tension: 0.99,
+}
+
+class Oscillator {
+  phase: number
+  offset: number
+  frequency: number
+  amplitude: number
+
+  constructor(opts: Partial<Oscillator> = {}) {
+    this.phase = opts.phase ?? 0
+    this.offset = opts.offset ?? 0
+    this.frequency = opts.frequency ?? 0.001
+    this.amplitude = opts.amplitude ?? 1
   }
-  n.prototype = {
-    // @ts-ignore
-    init: function (e) {
-      // @ts-ignore
-      this.phase = e.phase || 0;
-      // @ts-ignore
-      this.offset = e.offset || 0;
-      // @ts-ignore
-      this.frequency = e.frequency || 0.001;
-      // @ts-ignore
-      this.amplitude = e.amplitude || 1;
-    },
-    update: function () {
-      return (
-        // @ts-ignore
-        (this.phase += this.frequency),
-        // @ts-ignore
-        (e = this.offset + Math.sin(this.phase) * this.amplitude)
-      );
-    },
-    value: function () {
-      return e;
-    },
-  };
-  
-  // @ts-ignore
-  function Line(e) {
-    // @ts-ignore
-    this.init(e || {});
+
+  update(): number {
+    this.phase += this.frequency
+    return this.offset + Math.sin(this.phase) * this.amplitude
   }
-  
-  Line.prototype = {
-    // @ts-ignore
-    init: function (e) {
-      // @ts-ignore
-      this.spring = e.spring + 0.1 * Math.random() - 0.05;
-      // @ts-ignore
-      this.friction = E.friction + 0.01 * Math.random() - 0.005;
-      // @ts-ignore
-      this.nodes = [];
-      for (var t, n = 0; n < E.size; n++) {
-        t = new Node();
-        // @ts-ignore
-        t.x = pos.x;
-        // @ts-ignore
-        t.y = pos.y;
-        // @ts-ignore
-        this.nodes.push(t);
-      }
-    },
-    update: function () {
-      // @ts-ignore
-      let e = this.spring,
-        // @ts-ignore
-        t = this.nodes[0];
-      // @ts-ignore
-      t.vx += (pos.x - t.x) * e;
-      // @ts-ignore
-      t.vy += (pos.y - t.y) * e;
-      // @ts-ignore
-      for (var n, i = 0, a = this.nodes.length; i < a; i++)
-        // @ts-ignore
-        (t = this.nodes[i]),
-          0 < i &&
-            // @ts-ignore
-            ((n = this.nodes[i - 1]),
-            (t.vx += (n.x - t.x) * e),
-            (t.vy += (n.y - t.y) * e),
-            (t.vx += n.vx * E.dampening),
-            (t.vy += n.vy * E.dampening)),
-          // @ts-ignore
-          (t.vx *= this.friction),
-          // @ts-ignore
-          (t.vy *= this.friction),
-          (t.x += t.vx),
-          (t.y += t.vy),
-          (e *= E.tension);
-    },
-    draw: function () {
-      let e,
-        t,
-        // @ts-ignore
-        n = this.nodes[0].x,
-        // @ts-ignore
-        i = this.nodes[0].y;
-      // @ts-ignore
-      ctx.beginPath();
-      // @ts-ignore
-      ctx.moveTo(n, i);
-      // @ts-ignore
-      for (var a = 1, o = this.nodes.length - 2; a < o; a++) {
-        // @ts-ignore
-        e = this.nodes[a];
-        // @ts-ignore
-        t = this.nodes[a + 1];
-        n = 0.5 * (e.x + t.x);
-        i = 0.5 * (e.y + t.y);
-        // @ts-ignore
-        ctx.quadraticCurveTo(e.x, e.y, n, i);
-      }
-      // @ts-ignore
-      e = this.nodes[a];
-      // @ts-ignore
-      t = this.nodes[a + 1];
-      // @ts-ignore
-      ctx.quadraticCurveTo(e.x, e.y, t.x, t.y);
-      // @ts-ignore
-      ctx.stroke();
-      // @ts-ignore
-      ctx.closePath();
-    },
-  };
-  
-  // @ts-ignore
-  function onMousemove(e) {
-    function o() {
-      lines = [];
-      for (let e = 0; e < E.trails; e++)
-        lines.push(new Line({ spring: 0.45 + (e / E.trails) * 0.025 }));
-    }
-    // @ts-ignore
-    function c(e) {
-      e.touches
-        ? // @ts-ignore
-          ((pos.x = e.touches[0].pageX), (pos.y = e.touches[0].pageY))
-        : // @ts-ignore
-          ((pos.x = e.clientX), (pos.y = e.clientY)),
-        e.preventDefault();
-    }
-    // @ts-ignore
-    function l(e) {
-      // @ts-ignore
-      1 == e.touches.length &&
-        ((pos.x = e.touches[0].pageX), (pos.y = e.touches[0].pageY));
-    }
-    document.removeEventListener("mousemove", onMousemove),
-      document.removeEventListener("touchstart", onMousemove),
-      document.addEventListener("mousemove", c),
-      document.addEventListener("touchmove", c),
-      document.addEventListener("touchstart", l),
-      c(e),
-      o(),
-      render();
+}
+
+class TrailNode {
+  x = 0
+  y = 0
+  vx = 0
+  vy = 0
+
+  constructor(pos: Vec2) {
+    this.x = pos.x
+    this.y = pos.y
   }
-  
-  function render() {
-    // @ts-ignore
-    if (ctx.running) {
-      // @ts-ignore
-      ctx.globalCompositeOperation = "source-over";
-      // @ts-ignore
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      // @ts-ignore
-      ctx.globalCompositeOperation = "lighter";
-      // @ts-ignore
-      ctx.strokeStyle = "hsla(" + Math.round(f.update()) + ",100%,50%,0.025)";
-      // @ts-ignore
-      ctx.lineWidth = 10;
-      for (var e, t = 0; t < E.trails; t++) {
-        // @ts-ignore
-        (e = lines[t]).update();
-        e.draw();
+}
+
+class Line {
+  spring: number
+  friction: number
+  nodes: TrailNode[]
+
+  constructor(pos: Vec2, spring: number) {
+    this.spring = spring + 0.1 * Math.random() - 0.05
+    this.friction = SETTINGS.friction + 0.01 * Math.random() - 0.005
+    this.nodes = Array.from({ length: SETTINGS.size }, () => new TrailNode(pos))
+  }
+
+  update(pos: Vec2) {
+    let spring = this.spring
+    let node = this.nodes[0]
+
+    node.vx += (pos.x - node.x) * spring
+    node.vy += (pos.y - node.y) * spring
+
+    for (let i = 0; i < this.nodes.length; i++) {
+      node = this.nodes[i]
+
+      if (i > 0) {
+        const prev = this.nodes[i - 1]
+        node.vx += (prev.x - node.x) * spring
+        node.vy += (prev.y - node.y) * spring
+        node.vx += prev.vx * SETTINGS.dampening
+        node.vy += prev.vy * SETTINGS.dampening
       }
-      // @ts-ignore
-      ctx.frame++;
-      window.requestAnimationFrame(render);
+
+      node.vx *= this.friction
+      node.vy *= this.friction
+      node.x += node.vx
+      node.y += node.vy
+
+      spring *= SETTINGS.tension
     }
   }
-  
-  function resizeCanvas() {
-    // @ts-ignore
-    ctx.canvas.width = window.innerWidth - 20;
-    // @ts-ignore
-    ctx.canvas.height = window.innerHeight;
+
+  draw(ctx: CanvasCtx) {
+    let x = this.nodes[0].x
+    let y = this.nodes[0].y
+
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+
+    for (let i = 1; i < this.nodes.length - 2; i++) {
+      const a = this.nodes[i]
+      const b = this.nodes[i + 1]
+      x = 0.5 * (a.x + b.x)
+      y = 0.5 * (a.y + b.y)
+      ctx.quadraticCurveTo(a.x, a.y, x, y)
+    }
+
+    const a = this.nodes[this.nodes.length - 2]
+    const b = this.nodes[this.nodes.length - 1]
+    ctx.quadraticCurveTo(a.x, a.y, b.x, b.y)
+    ctx.stroke()
+    ctx.closePath()
   }
-  
-  // @ts-ignore
-  var ctx,
-    // @ts-ignore
-    f,
-    e = 0,
-    pos = {},
-    // @ts-ignore
-    lines = [],
-    E = {
-      debug: true,
-      friction: 0.5,
-      trails: 80,
-      size: 50,
-      dampening: 0.025,
-      tension: 0.99,
-    };
-  function Node() {
-    this.x = 0;
-    this.y = 0;
-    this.vy = 0;
-    this.vx = 0;
+}
+
+let ctx: CanvasCtx | null = null
+let oscillator: Oscillator | null = null
+let lines: Line[] = []
+let pos: Vec2 = { x: 0, y: 0 }
+let rafId: number | null = null
+
+function resizeCanvas() {
+  if (!ctx) return
+  ctx.canvas.width = Math.max(1, window.innerWidth - 20)
+  ctx.canvas.height = Math.max(1, window.innerHeight)
+}
+
+function setPosFromEvent(e: MouseEvent | TouchEvent) {
+  if ("touches" in e) {
+    if (!e.touches.length) return
+    pos = { x: e.touches[0].pageX, y: e.touches[0].pageY }
+  } else {
+    pos = { x: e.clientX, y: e.clientY }
   }
-  
-  export const renderCanvas = function () {
-    // @ts-expect-error - ctx is not defined
-    ctx = document.getElementById("canvas").getContext("2d");
-    ctx.running = true;
-    ctx.frame = 1;
-    f = new n({
-      phase: Math.random() * 2 * Math.PI,
-      amplitude: 85,
-      frequency: 0.0015,
-      offset: 285,
-    });
-    document.addEventListener("mousemove", onMousemove);
-    document.addEventListener("touchstart", onMousemove);
-    document.body.addEventListener("orientationchange", resizeCanvas);
-    window.addEventListener("resize", resizeCanvas);
-    window.addEventListener("focus", () => {
-      // @ts-expect-error - ctx is not defined
-      if (!ctx.running) {
-        // @ts-expect-error - ctx is not defined
-        ctx.running = true;
-        render();
-      }
-    });
-    window.addEventListener("blur", () => {
-      // @ts-expect-error - ctx is not defined
-      ctx.running = true;
-    });
-    resizeCanvas();
-  };
+}
+
+function ensureLines() {
+  if (!ctx) return
+  if (lines.length) return
+
+  // default position: center of the viewport
+  if (pos.x === 0 && pos.y === 0) {
+    pos = { x: ctx.canvas.width / 2, y: ctx.canvas.height / 2 }
+  }
+
+  lines = Array.from({ length: SETTINGS.trails }, (_, i) => {
+    const spring = 0.45 + (i / SETTINGS.trails) * 0.025
+    return new Line(pos, spring)
+  })
+}
+
+function render() {
+  if (!ctx || !ctx.running || !oscillator) return
+
+  ctx.globalCompositeOperation = "source-over"
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  ctx.globalCompositeOperation = "lighter"
+
+  ctx.strokeStyle = `hsla(${Math.round(oscillator.update())},100%,50%,0.025)`
+  ctx.lineWidth = 10
+
+  for (const line of lines) {
+    line.update(pos)
+    line.draw(ctx)
+  }
+
+  ctx.frame = (ctx.frame ?? 0) + 1
+  rafId = window.requestAnimationFrame(render)
+}
+
+function start() {
+  if (!ctx) return
+  if (ctx.running) return
+  ctx.running = true
+  render()
+}
+
+function stop() {
+  if (!ctx) return
+  ctx.running = false
+  if (rafId !== null) {
+    window.cancelAnimationFrame(rafId)
+    rafId = null
+  }
+}
+
+export const renderCanvas = () => {
+  const canvas = document.getElementById("canvas") as HTMLCanvasElement | null
+  if (!canvas) return
+  const nextCtx = canvas.getContext("2d") as CanvasCtx | null
+  if (!nextCtx) return
+
+  // Avoid double-init when React mounts/unmounts in dev
+  if (canvas.dataset.nomaCanvasInit === "1") return
+  canvas.dataset.nomaCanvasInit = "1"
+
+  ctx = nextCtx
+  ctx.running = true
+  ctx.frame = 1
+
+  oscillator = new Oscillator({
+    phase: Math.random() * 2 * Math.PI,
+    amplitude: 85,
+    frequency: 0.0015,
+    offset: 285,
+  })
+
+  resizeCanvas()
+  ensureLines()
+  render()
+
+  const onMouseMove = (e: MouseEvent) => {
+    setPosFromEvent(e)
+  }
+
+  const onTouchMove = (e: TouchEvent) => {
+    setPosFromEvent(e)
+    // keep behavior similar to original: prevent scroll while interacting
+    e.preventDefault()
+  }
+
+  document.addEventListener("mousemove", onMouseMove)
+  document.addEventListener("touchstart", onTouchMove, { passive: false })
+  document.addEventListener("touchmove", onTouchMove, { passive: false })
+  window.addEventListener("resize", resizeCanvas)
+  window.addEventListener("focus", start)
+  window.addEventListener("blur", stop)
+}
   
