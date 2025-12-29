@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useRef, useTransition, useState } from "react";
 
 import {
   Sidebar,
@@ -20,6 +21,7 @@ import {
   PenSquare,
   Image as ImageIcon,
   Grid2X2,
+  FileUp,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
@@ -29,6 +31,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { createNoteAction } from "@/app/workspace/notes/actions";
+import { createCanvasAction } from "@/app/workspace/canvas/actions";
+import { uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { useBilling } from "@/hooks/use-billing";
+import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 
 const mainNav = [
   { title: "Home", href: "/workspace", icon: Home },
@@ -40,60 +54,198 @@ const mainNav = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isCreating, startCreate] = useTransition();
+  const [isUploading, startUpload] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const billing = useBilling();
+  const [limitOpen, setLimitOpen] = useState(false);
+  const [limitText, setLimitText] = useState<string | null>(null);
+
+  const handleCreateNote = () => {
+    if (billing.status === "ready" && billing.entitlements) {
+      const limit = billing.entitlements.notesLimit;
+      if (limit !== null && (billing.usage?.notesUsed ?? 0) >= limit) {
+        setLimitText("You've reached the Free plan note limit. Upgrade to Pro for unlimited notes.");
+        setLimitOpen(true);
+        return;
+      }
+    }
+    startCreate(async () => {
+      try {
+        const id = await createNoteAction();
+        router.push(`/workspace/notes/${id}`);
+      } catch (err) {
+        setLimitText(err instanceof Error ? err.message : "Failed to create note");
+        setLimitOpen(true);
+      }
+    });
+  };
+
+  const handleCreateCanvas = () => {
+    if (billing.status === "ready" && billing.entitlements) {
+      const limit = billing.entitlements.canvasesLimit;
+      if (limit !== null && (billing.usage?.canvasesUsed ?? 0) >= limit) {
+        setLimitText("You've reached the Free plan canvas limit. Upgrade to Pro for unlimited canvases.");
+        setLimitOpen(true);
+        return;
+      }
+    }
+    startCreate(async () => {
+      try {
+        const id = await createCanvasAction();
+        router.push(`/workspace/canvas/${id}`);
+      } catch (err) {
+        setLimitText(err instanceof Error ? err.message : "Failed to create canvas");
+        setLimitOpen(true);
+      }
+    });
+  };
+
+  const handleUploadMedia = () => {
+    if (billing.status === "ready" && billing.entitlements) {
+      const limitGb = billing.entitlements.storageLimitGb;
+      if (limitGb !== null && (billing.usage?.storageUsedBytes ?? 0) >= (limitGb * 1024 * 1024 * 1024)) {
+        setLimitText(`You've reached the Free plan storage limit (${limitGb}GB). Upgrade to Pro for higher storage limits.`);
+        setLimitOpen(true);
+        return;
+      }
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (billing.status === "ready" && billing.entitlements) {
+      const limitGb = billing.entitlements.storageLimitGb;
+      if (limitGb !== null) {
+        const currentStorageBytes = billing.usage?.storageUsedBytes ?? 0;
+        const limitBytes = limitGb * 1024 * 1024 * 1024;
+        if (currentStorageBytes + file.size > limitBytes) {
+          setLimitText(`You've reached the Free plan storage limit (${limitGb}GB). Upgrade to Pro for higher storage limits.`);
+          setLimitOpen(true);
+          e.target.value = "";
+          return;
+        }
+      }
+    }
+
+    startUpload(async () => {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        await uploadMediaFileAction(formData);
+        router.push("/workspace/media");
+        router.refresh();
+      } catch (err) {
+        setLimitText(err instanceof Error ? err.message : "Failed to upload media");
+        setLimitOpen(true);
+      } finally {
+        e.target.value = "";
+      }
+    });
+  };
 
   return (
-    <TooltipProvider delayDuration={100}>
-       <Sidebar
-         side="left"
-         variant="sidebar"
-         collapsible="none"
-         className="border-r border-border/20 bg-sidebar/40 backdrop-blur-xl text-sidebar-foreground h-screen shadow-xl shadow-black/5"
-         style={
-           {
-             "--sidebar-width": "72px",
-             "--sidebar-width-icon": "72px",
-           } as React.CSSProperties
-         }
-       >
-        {/* 🧱 FIXED: wrap content correctly */}
-        <SidebarContent className="flex h-full flex-col">
-          
-          {/* Top: create button + main nav */}
-          <div className="flex-1 pt-4">
+    <>
+      <LimitReachedDialog
+        open={limitOpen}
+        onOpenChange={setLimitOpen}
+        title="Limit Reached"
+        description={limitText ?? undefined}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        accept="image/*,video/*,audio/*,application/pdf"
+      />
+      <TooltipProvider delayDuration={100}>
+         <Sidebar
+           side="left"
+           variant="sidebar"
+           collapsible="none"
+           className="border-r border-border/20 bg-sidebar/40 backdrop-blur-xl text-sidebar-foreground h-screen shadow-xl shadow-black/5"
+           style={
+             {
+               "--sidebar-width": "72px",
+               "--sidebar-width-icon": "72px",
+             } as React.CSSProperties
+           }
+         >
+          {/* 🧱 FIXED: wrap content correctly */}
+          <SidebarContent className="flex h-full flex-col">
             
-            {/* Create / add button */}
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                         <SidebarMenuButton
-                           className={cn(
-                             "mx-auto mb-5 flex h-10 w-10 items-center justify-center rounded-full",
-                             "bg-gradient-to-br from-primary/90 to-primary/80 backdrop-blur-md",
-                             "border border-primary/30 text-primary-foreground",
-                             "shadow-lg shadow-primary/25",
-                             "transition-all duration-200",
-                             "hover:scale-105 hover:shadow-xl hover:shadow-primary/40 hover:border-primary/50",
-                             "active:scale-95",
-                             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                           )}
-                           onClick={() => {
-                             console.log("Open create menu");
-                           }}
-                         >
-                           <Plus className="h-4 w-4" />
-                         </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="text-xs">
-                        New item
-                      </TooltipContent>
-                    </Tooltip>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            {/* Top: create button + main nav */}
+            <div className="flex-1 pt-4">
+              
+              {/* Create / add button */}
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <DropdownMenu>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuTrigger asChild>
+                              <SidebarMenuButton
+                                className={cn(
+                                  "mx-auto mb-5 flex h-10 w-10 items-center justify-center rounded-full",
+                                  "bg-gradient-to-br from-primary/90 to-primary/80 backdrop-blur-md",
+                                  "border border-primary/30 text-primary-foreground",
+                                  "shadow-lg shadow-primary/25",
+                                  "transition-all duration-200",
+                                  "hover:scale-105 hover:shadow-xl hover:shadow-primary/40 hover:border-primary/50",
+                                  "active:scale-95",
+                                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                                  (isCreating || isUploading) && "opacity-50 cursor-not-allowed"
+                                )}
+                                disabled={isCreating || isUploading}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </SidebarMenuButton>
+                            </DropdownMenuTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">
+                            New item
+                          </TooltipContent>
+                        </Tooltip>
+                        <DropdownMenuContent side="right" align="start" className="w-48">
+                          <DropdownMenuItem
+                            onClick={handleCreateNote}
+                            disabled={isCreating || isUploading}
+                          >
+                            <PenSquare className="mr-2 h-4 w-4" />
+                            Create Note
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleCreateCanvas}
+                            disabled={isCreating || isUploading}
+                          >
+                            <Grid2X2 className="mr-2 h-4 w-4" />
+                            Create Canvas
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleUploadMedia}
+                            disabled={isCreating || isUploading}
+                          >
+                            <FileUp className="mr-2 h-4 w-4" />
+                            Upload Media
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem disabled>
+                            <MessagesSquare className="mr-2 h-4 w-4" />
+                            Start New Chat
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
 
             {/* Main nav icons */}
             <SidebarGroup>
@@ -185,5 +337,6 @@ export function AppSidebar() {
         </SidebarContent>
       </Sidebar>
     </TooltipProvider>
+    </>
   );
 }

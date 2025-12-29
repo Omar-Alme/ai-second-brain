@@ -118,6 +118,43 @@ export async function deleteMediaFileAction(input: { mediaId: string }) {
     await prisma.mediaFile.delete({ where: { id: media.id } });
 }
 
+export async function deleteMediaFilesAction(input: { ids: string[] }) {
+    const { ids } = input;
+    if (ids.length === 0) return;
+    
+    const entitlements = await getBillingEntitlements();
+    const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
+    
+    // Fetch all media files to delete from storage
+    const mediaFiles = await prisma.mediaFile.findMany({
+        where: {
+            id: { in: ids },
+            userId: profile.id,
+        },
+        select: { id: true, url: true },
+    });
+
+    // Best-effort storage deletion for each file
+    const supabase = getSupabaseAdmin();
+    for (const media of mediaFiles) {
+        try {
+            const parsed = parseSupabasePublicObjectPath(media.url);
+            if (parsed) {
+                await supabase.storage.from(parsed.bucket).remove([parsed.path]);
+            }
+        } catch (e) {
+            console.warn(`[deleteMediaFilesAction] Failed to delete ${media.id} from storage:`, e);
+        }
+    }
+
+    await prisma.mediaFile.deleteMany({
+        where: {
+            id: { in: ids },
+            userId: profile.id,
+        },
+    });
+}
+
 export async function uploadMediaFileAction(formData: FormData) {
     const entitlements = await getBillingEntitlements();
     const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });

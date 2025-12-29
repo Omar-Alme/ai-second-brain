@@ -87,3 +87,17 @@ export async function deleteNoteAction(input: { id: string }) {
         where: { id: note.id },
     });
 }
+
+export async function deleteNotesAction(input: { ids: string[] }) {
+    const { ids } = input;
+    if (ids.length === 0) return;
+    
+    const profile = await getCurrentProfile();
+
+    await prisma.note.deleteMany({
+        where: {
+            id: { in: ids },
+            userId: profile.id,
+        },
+    });
+}

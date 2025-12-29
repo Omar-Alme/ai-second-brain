@@ -2,15 +2,15 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
+import { SelectionActionBar } from "@/components/workspace/selection-action-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Grid2X2, LayoutGrid, List, PlusSquare, Search } from "lucide-react";
-import { createCanvasAction } from "@/app/workspace/canvas/actions";
+import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
@@ -45,6 +45,8 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
     const [createError, setCreateError] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isDeleting, startDelete] = useTransition();
 
     const billing = useBilling();
 
@@ -65,6 +67,23 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                 setCreateError(err instanceof Error ? err.message : "Failed to create canvas");
             }
         });
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.size === 0) return;
+        startDelete(async () => {
+            try {
+                await deleteCanvasesAction({ ids: Array.from(selectedIds) });
+                setSelectedIds(new Set());
+                router.refresh();
+            } catch (err) {
+                console.error("Failed to delete canvases:", err);
+            }
+        });
+    };
+
+    const handleClearSelection = () => {
+        setSelectedIds(new Set());
     };
 
     return (
@@ -173,15 +192,38 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {canvases.map((c) => (
-                    <Link key={c.id} href={`/workspace/canvas/${c.id}`}>
-                        <ResourceCard
-                            title={c.title || "Untitled"}
-                            tagLabel="Canvas"
-                            icon={<Grid2X2 className="h-3 w-3" />}
-                        />
-                    </Link>
+                    <ResourceCard
+                        key={c.id}
+                        title={c.title || "Untitled"}
+                        tagLabel="Canvas"
+                        icon={<Grid2X2 className="h-3 w-3" />}
+                        selected={selectedIds.has(c.id)}
+                        onSelectChange={(selected) => {
+                            if (selected) {
+                                setSelectedIds((prev) => new Set(prev).add(c.id));
+                            } else {
+                                setSelectedIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(c.id);
+                                    return next;
+                                });
+                            }
+                        }}
+                        onClick={() => {
+                            if (!selectedIds.has(c.id)) {
+                                router.push(`/workspace/canvas/${c.id}`);
+                            }
+                        }}
+                    />
                 ))}
             </div>
+
+            <SelectionActionBar
+                selectedCount={selectedIds.size}
+                onDelete={handleDeleteSelected}
+                onClearSelection={handleClearSelection}
+                isDeleting={isDeleting}
+            />
         </SectionShell>
     );
 }

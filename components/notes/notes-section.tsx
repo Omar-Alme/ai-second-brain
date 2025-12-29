@@ -2,15 +2,15 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
+import { SelectionActionBar } from "@/components/workspace/selection-action-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { GripVertical, LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
-import { createNoteAction } from "@/app/workspace/notes/actions";
+import { LayoutGrid, List, PenSquare, PlusSquare, Search } from "lucide-react";
+import { createNoteAction, deleteNotesAction } from "@/app/workspace/notes/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
@@ -45,6 +45,8 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
     const [createError, setCreateError] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isDeleting, startDelete] = useTransition();
 
     const billing = useBilling();
 
@@ -65,6 +67,35 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                 setCreateError(err instanceof Error ? err.message : "Failed to create note");
             }
         });
+    };
+
+    const handleToggleSelect = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.size === 0) return;
+        startDelete(async () => {
+            try {
+                await deleteNotesAction({ ids: Array.from(selectedIds) });
+                setSelectedIds(new Set());
+                router.refresh();
+            } catch (err) {
+                console.error("Failed to delete notes:", err);
+            }
+        });
+    };
+
+    const handleClearSelection = () => {
+        setSelectedIds(new Set());
     };
 
     return (
@@ -174,38 +205,38 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                 {notes.map((note) => (
-                    <Link key={note.id} href={`/workspace/notes/${note.id}`}>
-                        <div className="group relative">
-                            <ResourceCard
-                                title={note.title || "Untitled"}
-                                tagLabel="Notes"
-                                icon={<PenSquare className="h-3 w-3" />}
-                                className="pr-9"
-                            />
-
-                            {/* Drag handle affordance (visual only for now) */}
-                            <button
-                                type="button"
-                                aria-label="Reorder note (coming soon)"
-                                title="Drag to reorder (coming soon)"
-                                className={cn(
-                                    "absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md",
-                                    "text-muted-foreground/70 hover:text-foreground",
-                                    "bg-background/70 backdrop-blur border border-border/60 shadow-sm",
-                                    "opacity-0 group-hover:opacity-100 transition-opacity",
-                                    "cursor-grab active:cursor-grabbing"
-                                )}
-                                onClick={(e) => {
-                                    // Prevent navigation; this is only an affordance until ordering is implemented.
-                                    e.preventDefault();
-                                }}
-                            >
-                                <GripVertical className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </Link>
+                    <ResourceCard
+                        key={note.id}
+                        title={note.title || "Untitled"}
+                        tagLabel="Notes"
+                        icon={<PenSquare className="h-3 w-3" />}
+                        selected={selectedIds.has(note.id)}
+                        onSelectChange={(selected) => {
+                            if (selected) {
+                                setSelectedIds((prev) => new Set(prev).add(note.id));
+                            } else {
+                                setSelectedIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(note.id);
+                                    return next;
+                                });
+                            }
+                        }}
+                        onClick={() => {
+                            if (!selectedIds.has(note.id)) {
+                                router.push(`/workspace/notes/${note.id}`);
+                            }
+                        }}
+                    />
                 ))}
             </div>
+
+            <SelectionActionBar
+                selectedCount={selectedIds.size}
+                onDelete={handleDeleteSelected}
+                onClearSelection={handleClearSelection}
+                isDeleting={isDeleting}
+            />
         </SectionShell>
     );
 }
