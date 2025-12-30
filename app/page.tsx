@@ -39,10 +39,10 @@ export default function LandingPage() {
       {/* Social proof */}
       <section className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="rounded-3xl border border-border bg-white/60 px-6 py-8 shadow-sm backdrop-blur md:px-10">
+          <div className="rounded-3xl border border-border bg-background/60 px-6 py-8 shadow-sm backdrop-blur md:px-10">
             <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+                <div className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
                   <Sparkles className="h-4 w-4 text-primary" />
                   <span>Built for focused creators</span>
                 </div>
@@ -59,7 +59,7 @@ export default function LandingPage() {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className="rounded-2xl border border-border bg-white/60 p-4 text-center shadow-xs"
+                    className="rounded-2xl border border-border bg-background/60 p-4 text-center shadow-xs"
                   >
                     <div className="text-sm font-semibold">{s.value}</div>
                     <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
@@ -72,7 +72,7 @@ export default function LandingPage() {
               {["Deep work", "Research", "Projects", "Learning", "Writing"].map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border bg-white/60 px-3 py-1 text-xs text-muted-foreground"
+                  className="rounded-full border border-border bg-background/60 px-3 py-1 text-xs text-muted-foreground"
                 >
                   {tag}
                 </span>
@@ -86,7 +86,7 @@ export default function LandingPage() {
       <section id="features" className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-primary" />
               <span>Product</span>
             </div>
@@ -127,7 +127,7 @@ export default function LandingPage() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="group relative overflow-hidden rounded-3xl border border-border bg-white/60 p-6 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+                className="group relative overflow-hidden rounded-3xl border border-border bg-background/60 p-6 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
                   <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-primary/10 blur-2xl" />
@@ -153,7 +153,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-primary" />
               <span>Workflow</span>
             </div>
@@ -191,7 +191,7 @@ export default function LandingPage() {
             ].map((step, index) => (
               <div
                 key={index}
-                className="rounded-3xl border border-border bg-white/60 p-6 text-center shadow-sm backdrop-blur"
+                className="rounded-3xl border border-border bg-background/60 p-6 text-center shadow-sm backdrop-blur"
               >
                 <div className="mx-auto mb-4 inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-semibold">
                   {step.step}
@@ -206,13 +206,13 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 max-w-5xl mx-auto">
-            <div className="rounded-3xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+            <div className="rounded-3xl border border-border bg-background/60 p-4 shadow-sm backdrop-blur">
               <div className="relative aspect-video overflow-hidden rounded-2xl bg-linear-to-r from-primary/5 via-transparent to-primary/10">
                 <div aria-hidden className="absolute inset-0">
-                  <div className="absolute left-6 top-6 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
-                  <div className="absolute left-32 top-16 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
-                  <div className="absolute left-60 top-10 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
-                  <div className="absolute right-8 bottom-10 h-16 w-16 rounded-2xl bg-white/60 shadow-sm" />
+                  <div className="absolute left-6 top-6 h-16 w-16 rounded-2xl bg-background/60 shadow-sm" />
+                  <div className="absolute left-32 top-16 h-16 w-16 rounded-2xl bg-background/60 shadow-sm" />
+                  <div className="absolute left-60 top-10 h-16 w-16 rounded-2xl bg-background/60 shadow-sm" />
+                  <div className="absolute right-8 bottom-10 h-16 w-16 rounded-2xl bg-background/60 shadow-sm" />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-sm text-muted-foreground">Your workspace, visualized</p>
@@ -227,7 +227,7 @@ export default function LandingPage() {
       <section id="product" className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-primary" />
               <span>Use cases</span>
             </div>
@@ -265,7 +265,7 @@ export default function LandingPage() {
             ].map((useCase, index) => (
               <div
                 key={index}
-                className="rounded-3xl border border-border bg-white/60 p-6 text-center shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+                className="rounded-3xl border border-border bg-background/60 p-6 text-center shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
                   <useCase.icon className="w-6 h-6 text-primary" />
@@ -282,7 +282,7 @@ export default function LandingPage() {
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-primary" />
               <span>Loved by focused teams</span>
             </div>
@@ -317,7 +317,7 @@ export default function LandingPage() {
             ].map((t) => (
               <div
                 key={t.name}
-                className="rounded-3xl border border-border bg-white/60 p-6 shadow-sm backdrop-blur"
+                className="rounded-3xl border border-border bg-background/60 p-6 shadow-sm backdrop-blur"
               >
                 <div className="flex items-center gap-1 text-primary/80">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -342,7 +342,7 @@ export default function LandingPage() {
       <section id="pricing" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4 text-primary" />
               <span>Pricing</span>
             </div>
@@ -354,7 +354,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="rounded-3xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur sm:p-6">
+          <div className="rounded-3xl border border-border bg-background/60 p-4 shadow-sm backdrop-blur sm:p-6">
             <PricingTable
               appearance={{
                 elements: {

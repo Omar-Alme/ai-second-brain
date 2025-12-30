@@ -3,6 +3,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "tldraw/tldraw.css";
+@import "@clerk/themes/shadcn.css";
 @layer theme, base, clerk, components, utilities;
 
 @custom-variant dark (&:is(.dark *));

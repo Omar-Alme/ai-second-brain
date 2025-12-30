@@ -1,10 +1,14 @@
 import type { Appearance } from "@clerk/types";
+import { shadcn } from "@clerk/themes";
 
 /**
  * Centralized Clerk appearance that follows our shadcn theme tokens.
  * Uses Tailwind classes (dark variants work automatically via `.dark`).
  */
 export const CLERK_APPEARANCE: Appearance = {
+  // Clerk shadcn theme adapts to light/dark automatically when using `@clerk/themes/shadcn.css`.
+  // See: https://clerk.com/docs/nextjs/guides/customizing-clerk/appearance-prop/themes
+  theme: shadcn,
   variables: {
     colorPrimary: "hsl(var(--primary))",
     colorText: "hsl(var(--foreground))",
