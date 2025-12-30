@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Image as ImageIcon, LayoutGrid, List, MoreHorizontal, Search, Trash2, Upload } from "lucide-react";
+import { Image as ImageIcon, LayoutGrid, List, Search, Upload } from "lucide-react";
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
@@ -37,7 +36,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { deleteMediaFileAction, deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 
@@ -84,10 +83,9 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [uploadOpen, setUploadOpen] = useState(false);
-    const [deleteId, setDeleteId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [isUploading, startUpload] = useTransition();
-    const [isDeleting, startDelete] = useTransition();
     const [isDeletingBulk, startDeleteBulk] = useTransition();
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -103,10 +101,11 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
         [mediaFiles, previewId]
     );
 
-    const deleteTarget = useMemo(
-        () => (deleteId ? mediaFiles.find((m) => m.id === deleteId) ?? null : null),
-        [mediaFiles, deleteId]
-    );
+    const selectedMedia = useMemo(() => {
+        if (selectedIds.size === 0) return [];
+        const ids = selectedIds;
+        return mediaFiles.filter((m) => ids.has(m.id));
+    }, [mediaFiles, selectedIds]);
 
     const onPickFile = (file: File) => {
         const storageBlocked =
@@ -138,15 +137,7 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
 
     const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
-        startDeleteBulk(async () => {
-            try {
-                await deleteMediaFilesAction({ ids: Array.from(selectedIds) });
-                setSelectedIds(new Set());
-                router.refresh();
-            } catch (err) {
-                console.error("Failed to delete media files:", err);
-            }
-        });
+        setBulkDeleteOpen(true);
     };
 
     const handleClearSelection = () => {
@@ -301,34 +292,6 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                                         "hover:border-border/80"
                                     )}
                                 />
-
-                                <div className="absolute right-2 top-2">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon-sm"
-                                                className="rounded-full bg-background/80 backdrop-blur"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem
-                                                className="text-destructive focus:text-destructive"
-                                                onSelect={(e) => {
-                                                    e.preventDefault();
-                                                    setDeleteId(m.id);
-                                                }}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
                             </div>
                         );
                     })}
@@ -467,37 +430,51 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                 </DialogContent>
             </Dialog>
 
-            {/* Delete confirm */}
+            {/* Bulk delete confirm (selected items) */}
             <AlertDialog
-                open={!!deleteTarget}
+                open={bulkDeleteOpen}
                 onOpenChange={(open) => {
-                    if (!open) setDeleteId(null);
+                    setBulkDeleteOpen(open);
                 }}
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete file?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            Delete {selectedIds.size} {selectedIds.size === 1 ? "file" : "files"}?
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            {deleteTarget?.name ? `This will permanently delete “${deleteTarget.name}”.` : "This will permanently delete this file."}
+                            This will permanently delete the selected files.
+                            {selectedMedia.length > 0 && (
+                                <>
+                                    {" "}
+                                    ({selectedMedia.slice(0, 3).map((m) => m.name).join(", ")}
+                                    {selectedMedia.length > 3 ? ", …" : ""})
+                                </>
+                            )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isDeletingBulk}>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            disabled={isDeleting || !deleteTarget}
+                            disabled={isDeletingBulk || selectedIds.size === 0}
                             onClick={() => {
-                                if (!deleteTarget) return;
-                                startDelete(async () => {
-                                    await deleteMediaFileAction({ mediaId: deleteTarget.id });
-                                    setDeleteId(null);
-                                    if (previewId === deleteTarget.id) {
-                                        router.replace("/workspace/media");
+                                const ids = Array.from(selectedIds);
+                                startDeleteBulk(async () => {
+                                    try {
+                                        await deleteMediaFilesAction({ ids });
+                                        setBulkDeleteOpen(false);
+                                        setSelectedIds(new Set());
+                                        if (previewId && ids.includes(previewId)) {
+                                            router.replace("/workspace/media");
+                                        }
+                                        router.refresh();
+                                    } catch (err) {
+                                        console.error("Failed to bulk delete media files:", err);
                                     }
-                                    router.refresh();
                                 });
                             }}
                         >
-                            {isDeleting ? "Deleting…" : "Delete"}
+                            {isDeletingBulk ? "Deleting…" : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

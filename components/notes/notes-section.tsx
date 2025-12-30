@@ -14,6 +14,16 @@ import { createNoteAction, deleteNotesAction } from "@/app/workspace/notes/actio
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuLabel,
@@ -47,6 +57,7 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
     const [createError, setCreateError] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isDeleting, startDelete] = useTransition();
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
     const billing = useBilling();
 
@@ -83,15 +94,7 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
 
     const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
-        startDelete(async () => {
-            try {
-                await deleteNotesAction({ ids: Array.from(selectedIds) });
-                setSelectedIds(new Set());
-                router.refresh();
-            } catch (err) {
-                console.error("Failed to delete notes:", err);
-            }
-        });
+        setBulkDeleteOpen(true);
     };
 
     const handleClearSelection = () => {
@@ -237,6 +240,40 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                 onClearSelection={handleClearSelection}
                 isDeleting={isDeleting}
             />
+
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete {selectedIds.size} {selectedIds.size === 1 ? "note" : "notes"}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the selected notes.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting || selectedIds.size === 0}
+                            onClick={() => {
+                                const ids = Array.from(selectedIds);
+                                startDelete(async () => {
+                                    try {
+                                        await deleteNotesAction({ ids });
+                                        setBulkDeleteOpen(false);
+                                        setSelectedIds(new Set());
+                                        router.refresh();
+                                    } catch (err) {
+                                        console.error("Failed to delete notes:", err);
+                                    }
+                                });
+                            }}
+                        >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SectionShell>
     );
 }

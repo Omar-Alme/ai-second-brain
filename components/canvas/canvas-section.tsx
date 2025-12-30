@@ -14,6 +14,16 @@ import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuLabel,
@@ -47,6 +57,7 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
     const [createError, setCreateError] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isDeleting, startDelete] = useTransition();
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
     const billing = useBilling();
 
@@ -71,15 +82,7 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
 
     const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
-        startDelete(async () => {
-            try {
-                await deleteCanvasesAction({ ids: Array.from(selectedIds) });
-                setSelectedIds(new Set());
-                router.refresh();
-            } catch (err) {
-                console.error("Failed to delete canvases:", err);
-            }
-        });
+        setBulkDeleteOpen(true);
     };
 
     const handleClearSelection = () => {
@@ -224,6 +227,40 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                 onClearSelection={handleClearSelection}
                 isDeleting={isDeleting}
             />
+
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete {selectedIds.size} {selectedIds.size === 1 ? "canvas" : "canvases"}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the selected canvases.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting || selectedIds.size === 0}
+                            onClick={() => {
+                                const ids = Array.from(selectedIds);
+                                startDelete(async () => {
+                                    try {
+                                        await deleteCanvasesAction({ ids });
+                                        setBulkDeleteOpen(false);
+                                        setSelectedIds(new Set());
+                                        router.refresh();
+                                    } catch (err) {
+                                        console.error("Failed to delete canvases:", err);
+                                    }
+                                });
+                            }}
+                        >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SectionShell>
     );
 }
