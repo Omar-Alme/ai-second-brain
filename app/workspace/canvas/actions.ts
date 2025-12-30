@@ -73,3 +73,17 @@ export async function deleteCanvasAction(input: { id: string }) {
         where: { id: canvas.id },
     });
 }
+
+export async function deleteCanvasesAction(input: { ids: string[] }) {
+    const { ids } = input;
+    if (ids.length === 0) return;
+    
+    const profile = await getCurrentProfile();
+
+    await prisma.canvas.deleteMany({
+        where: {
+            id: { in: ids },
+            userId: profile.id,
+        },
+    });
+}

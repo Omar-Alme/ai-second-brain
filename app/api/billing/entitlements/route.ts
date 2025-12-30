@@ -29,7 +29,8 @@ export async function GET() {
   }
 
   // Signed in: compute usage from DB (notes/canvases count, chat messages as AI usage placeholder).
-  const profile = await getCurrentProfile({ syncPlanKey: entitlements.isPro ? "pro" : "free" });
+  // getCurrentProfile() now always syncs the plan from Clerk billing automatically
+  const profile = await getCurrentProfile();
 
   const [notesUsed, canvasesUsed, aiMessagesUsed, storageAgg] = await Promise.all([
     prisma.note.count({ where: { userId: profile.id } }),

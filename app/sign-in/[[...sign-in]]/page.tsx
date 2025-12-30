@@ -12,7 +12,6 @@ export default function Page() {
         </div>
 
         <SignIn
-          redirectUrl="/workspace"
           appearance={{
             elements: {
               card: "shadow-lg border border-border rounded-2xl",

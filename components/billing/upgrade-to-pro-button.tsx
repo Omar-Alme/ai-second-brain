@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,55 @@ import { BILLING_CONFIG } from "@/lib/billing/config";
 
 const BILLING_REFRESH_EVENT = "noma:billing-refresh";
 
+async function syncBilling() {
+  try {
+    // Force sync on server side
+    await fetch("/api/billing/sync", { method: "POST" });
+  } catch (err) {
+    console.error("[UpgradeToProButton] Failed to sync billing:", err);
+  }
+  // Also trigger client-side refresh
+  window.dispatchEvent(new Event(BILLING_REFRESH_EVENT));
+}
+
+async function waitForBillingUpdate(maxRetries = 5, delayMs = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    
+    try {
+      // Check if billing has updated by fetching entitlements
+      const res = await fetch("/api/billing/entitlements", {
+        method: "GET",
+        headers: { "content-type": "application/json" },
+        cache: "no-store",
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        // If we're now on pro, we're done
+        if (data.entitlements?.isPro) {
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error("[UpgradeToProButton] Error checking billing status:", err);
+    }
+    
+    // Trigger refresh on each attempt
+    syncBilling();
+  }
+  
+  // Final refresh attempt
+  syncBilling();
+  return false;
+}
+
 export function UpgradeToProButton(props: {
   className?: string;
   children?: React.ReactNode;
 }) {
   const planId = BILLING_CONFIG.clerkPlanIds.pro;
+  const router = useRouter();
 
   return (
     <>
@@ -26,9 +71,11 @@ export function UpgradeToProButton(props: {
         {planId ? (
           <CheckoutButton
             planId={planId}
-            onSubscriptionComplete={() => {
-              // Nudge any mounted billing hooks to re-fetch entitlements/usage.
-              window.dispatchEvent(new Event(BILLING_REFRESH_EVENT));
+            onSubscriptionComplete={async () => {
+              // Wait for Clerk to process the subscription and retry until we see pro status
+              await waitForBillingUpdate();
+              // Force router refresh to update server components
+              router.refresh();
             }}
           >
             <Button className={props.className}>{props.children ?? "Upgrade to Pro"}</Button>

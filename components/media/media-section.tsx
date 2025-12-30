@@ -6,6 +6,7 @@ import { Image as ImageIcon, LayoutGrid, List, MoreHorizontal, Search, Trash2, U
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
+import { SelectionActionBar } from "@/components/workspace/selection-action-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { deleteMediaFileAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { deleteMediaFileAction, deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 
@@ -84,8 +85,10 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
     const searchParams = useSearchParams();
     const [uploadOpen, setUploadOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isUploading, startUpload] = useTransition();
     const [isDeleting, startDelete] = useTransition();
+    const [isDeletingBulk, startDeleteBulk] = useTransition();
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const billing = useBilling();
@@ -112,7 +115,7 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                 (billing.entitlements?.storageLimitGb ?? 0) * 1024 * 1024 * 1024;
 
         if (storageBlocked) {
-            setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
+            setLimitText("You've reached your storage limit. Upgrade to Pro for more storage.");
             setLimitOpen(true);
             return;
         }
@@ -131,6 +134,23 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                 setUploadError(e instanceof Error ? e.message : "Upload failed");
             }
         });
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.size === 0) return;
+        startDeleteBulk(async () => {
+            try {
+                await deleteMediaFilesAction({ ids: Array.from(selectedIds) });
+                setSelectedIds(new Set());
+                router.refresh();
+            } catch (err) {
+                console.error("Failed to delete media files:", err);
+            }
+        });
+    };
+
+    const handleClearSelection = () => {
+        setSelectedIds(new Set());
     };
 
     return (
@@ -253,25 +273,34 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                         const size = formatBytes(m.size);
                         return (
                             <div key={m.id} className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const params = new URLSearchParams(searchParams.toString());
-                                        params.set("preview", m.id);
-                                        router.replace(`${pathname}?${params.toString()}`);
+                                <ResourceCard
+                                    title={m.name}
+                                    tagLabel={`${type}${size ? ` • ${size}` : ""}`}
+                                    icon={<ImageIcon className="h-3 w-3" />}
+                                    selected={selectedIds.has(m.id)}
+                                    onSelectChange={(selected) => {
+                                        if (selected) {
+                                            setSelectedIds((prev) => new Set(prev).add(m.id));
+                                        } else {
+                                            setSelectedIds((prev) => {
+                                                const next = new Set(prev);
+                                                next.delete(m.id);
+                                                return next;
+                                            });
+                                        }
                                     }}
-                                    className="w-full text-left"
-                                >
-                                    <ResourceCard
-                                        title={m.name}
-                                        tagLabel={`${type}${size ? ` • ${size}` : ""}`}
-                                        icon={<ImageIcon className="h-3 w-3" />}
-                                        className={cn(
-                                            "cursor-pointer hover:shadow-md transition-shadow",
-                                            "hover:border-border/80"
-                                        )}
-                                    />
-                                </button>
+                                    onClick={() => {
+                                        if (!selectedIds.has(m.id)) {
+                                            const params = new URLSearchParams(searchParams.toString());
+                                            params.set("preview", m.id);
+                                            router.replace(`${pathname}?${params.toString()}`);
+                                        }
+                                    }}
+                                    className={cn(
+                                        "cursor-pointer hover:shadow-md transition-shadow",
+                                        "hover:border-border/80"
+                                    )}
+                                />
 
                                 <div className="absolute right-2 top-2">
                                     <DropdownMenu>
@@ -304,6 +333,13 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                         );
                     })}
                 </div>
+
+                <SelectionActionBar
+                    selectedCount={selectedIds.size}
+                    onDelete={handleDeleteSelected}
+                    onClearSelection={handleClearSelection}
+                    isDeleting={isDeletingBulk}
+                />
             </SectionShell>
 
             {/* Upload dialog */}
