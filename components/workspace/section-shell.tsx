@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { SidebarContent } from "@/components/ui/sidebar";
 import { ChevronRight, PanelLeftOpen, PanelLeftClose, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -272,6 +273,7 @@ export function SectionShell({
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <ThemeToggle className="rounded-full" />
                         {topBarRight}
                         {primaryActionLabel && (
                             <Button

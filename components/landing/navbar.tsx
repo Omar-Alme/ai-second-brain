@@ -5,6 +5,7 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const navItems = [
   { label: "Product", href: "#product" },
@@ -36,7 +37,7 @@ export function Navbar() {
       <div
         className={cn(
           "flex items-center justify-between rounded-full border px-4 sm:px-6 py-3",
-          "transition-all duration-300 bg-white/70 backdrop-blur-md",
+          "transition-all duration-300 bg-background/70 backdrop-blur-md",
           scrolled
             ? "shadow-lg border-border"
             : "shadow-sm border-border/60"
@@ -67,6 +68,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle className="rounded-full" />
           <SignedOut>
             <Button asChild variant="ghost" size="sm" className="rounded-full">
               <Link href="/sign-in">Sign in</Link>

@@ -129,7 +129,7 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
             secondaryListGroups={sidebarGroups}
         >
             {(isCreateBlocked || createError) && (
-                <div className="mb-6 rounded-2xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+                <div className="mb-6 rounded-2xl border border-border bg-background/60 p-4 shadow-sm backdrop-blur">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-sm font-semibold">You’ve hit the Free plan limit</p>

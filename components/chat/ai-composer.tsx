@@ -28,10 +28,10 @@ export function AiComposer() {
   }, [billing.entitlements, billing.status, billing.usage]);
 
   return (
-    <div className="rounded-3xl border border-border bg-white/60 p-6 shadow-sm backdrop-blur">
+    <div className="rounded-3xl border border-border bg-background/60 p-6 shadow-sm backdrop-blur">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
             <Sparkles className="h-4 w-4 text-primary" />
             <span>AI Assistant</span>
           </div>

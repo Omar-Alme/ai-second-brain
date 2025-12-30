@@ -1,4 +1,5 @@
 import { SignIn } from "@clerk/nextjs";
+import { CLERK_APPEARANCE } from "@/lib/clerk/appearance";
 
 export default function Page() {
   return (
@@ -13,17 +14,11 @@ export default function Page() {
 
         <SignIn
           appearance={{
+            ...CLERK_APPEARANCE,
             elements: {
-              card: "shadow-lg border border-border rounded-2xl",
+              ...CLERK_APPEARANCE.elements,
               headerTitle: "hidden",
               headerSubtitle: "hidden",
-              socialButtonsBlockButton:
-                "rounded-xl border border-border hover:bg-muted transition",
-              formButtonPrimary:
-                "rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition",
-              formFieldInput:
-                "rounded-xl border border-border focus:ring-2 focus:ring-primary/20",
-              footerActionLink: "text-primary hover:underline",
             },
           }}
         />
