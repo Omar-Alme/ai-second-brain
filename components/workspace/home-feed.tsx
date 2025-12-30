@@ -15,6 +15,7 @@ import {
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
+import { SelectionActionBar } from "@/components/workspace/selection-action-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -33,9 +34,19 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { createNoteAction } from "@/app/workspace/notes/actions";
-import { createCanvasAction } from "@/app/workspace/canvas/actions";
-import { uploadMediaFileAction } from "@/app/workspace/media/actions";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { createNoteAction, deleteNotesAction } from "@/app/workspace/notes/actions";
+import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas/actions";
+import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 
@@ -91,6 +102,9 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isCreating, startCreate] = useTransition();
     const [isUploading, startUpload] = useTransition();
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [isDeleting, startDelete] = useTransition();
     const billing = useBilling();
     const [limitOpen, setLimitOpen] = useState(false);
     const [limitText, setLimitText] = useState<string | null>(null);
@@ -143,6 +157,21 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
             size: item.media.size,
         };
     }, [items, previewMediaId]);
+
+    const selectedItems = useMemo(() => {
+        if (selectedKeys.size === 0) return [];
+        const keys = selectedKeys;
+        return items.filter((i) => keys.has(`${i.kind}:${i.id}`));
+    }, [items, selectedKeys]);
+
+    const handleDeleteSelected = () => {
+        if (selectedKeys.size === 0) return;
+        setBulkDeleteOpen(true);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedKeys(new Set());
+    };
 
     return (
         <>
@@ -303,35 +332,46 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                     {visibleItems.map((item) => {
-                        const card = (
+                        const key = `${item.kind}:${item.id}`;
+                        const isSelected = selectedKeys.has(key);
+
+                        return (
                             <ResourceCard
+                                key={key}
                                 title={item.title}
                                 tagLabel={item.tagLabel}
                                 icon={kindIcon(item.kind)}
-                                className="cursor-pointer hover:shadow-md transition-shadow hover:border-border/80"
+                                selected={isSelected}
+                                onSelectChange={(selected) => {
+                                    setSelectedKeys((prev) => {
+                                        const next = new Set(prev);
+                                        if (selected) next.add(key);
+                                        else next.delete(key);
+                                        return next;
+                                    });
+                                }}
+                                onClick={() => {
+                                    // When selecting, don't navigate/open preview.
+                                    if (selectedKeys.size > 0) return;
+
+                                    if (item.kind === "Media") {
+                                        setPreviewMediaId(item.id);
+                                        return;
+                                    }
+
+                                    router.push(item.href);
+                                }}
                             />
-                        );
-
-                        if (item.kind === "Media") {
-                            return (
-                                <button
-                                    key={`${item.kind}-${item.id}`}
-                                    type="button"
-                                    className="block text-left"
-                                    onClick={() => setPreviewMediaId(item.id)}
-                                >
-                                    {card}
-                                </button>
-                            );
-                        }
-
-                        return (
-                            <Link key={`${item.kind}-${item.id}`} href={item.href} className="block">
-                                {card}
-                            </Link>
                         );
                     })}
                 </div>
+
+                <SelectionActionBar
+                    selectedCount={selectedKeys.size}
+                    onDelete={handleDeleteSelected}
+                    onClearSelection={handleClearSelection}
+                    isDeleting={isDeleting}
+                />
             </SectionShell>
 
             {/* Upload from Home */}
@@ -507,6 +547,71 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Bulk delete confirm (Home feed selection) */}
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete {selectedKeys.size} {selectedKeys.size === 1 ? "item" : "items"}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the selected items from your workspace.
+                            {selectedItems.length > 0 && (
+                                <>
+                                    {" "}
+                                    ({selectedItems.slice(0, 3).map((i) => i.title).join(", ")}
+                                    {selectedItems.length > 3 ? ", …" : ""})
+                                </>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting || selectedKeys.size === 0}
+                            onClick={() => {
+                                const notes: string[] = [];
+                                const canvases: string[] = [];
+                                const media: string[] = [];
+
+                                for (const key of selectedKeys) {
+                                    const idx = key.indexOf(":");
+                                    if (idx === -1) continue;
+                                    const kind = key.slice(0, idx);
+                                    const id = key.slice(idx + 1);
+                                    if (!id) continue;
+                                    if (kind === "Notes") notes.push(id);
+                                    else if (kind === "Canvas") canvases.push(id);
+                                    else if (kind === "Media") media.push(id);
+                                }
+
+                                startDelete(async () => {
+                                    try {
+                                        await Promise.all([
+                                            notes.length ? deleteNotesAction({ ids: notes }) : Promise.resolve(),
+                                            canvases.length ? deleteCanvasesAction({ ids: canvases }) : Promise.resolve(),
+                                            media.length ? deleteMediaFilesAction({ ids: media }) : Promise.resolve(),
+                                        ]);
+
+                                        if (previewMediaId && media.includes(previewMediaId)) {
+                                            setPreviewMediaId(null);
+                                        }
+
+                                        setBulkDeleteOpen(false);
+                                        setSelectedKeys(new Set());
+                                        router.refresh();
+                                    } catch (err) {
+                                        console.error("Failed to bulk delete from home feed:", err);
+                                    }
+                                });
+                            }}
+                        >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
