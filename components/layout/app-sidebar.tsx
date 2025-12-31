@@ -214,6 +214,7 @@ export function AppSidebar() {
                                   (isCreating || isUploading) && "opacity-50 cursor-not-allowed"
                                 )}
                                 disabled={isCreating || isUploading}
+                                aria-label="Create new item"
                               >
                                 <Plus className="h-4 w-4" />
                               </SidebarMenuButton>
@@ -298,7 +299,7 @@ export function AppSidebar() {
                                    )} />
                                  </span>
                                  <span className={cn(
-                                   "text-[10px] font-medium leading-tight tracking-tight transition-colors",
+                                   "text-[11px] font-medium leading-tight tracking-tight transition-colors",
                                    !isActive && "text-foreground/70",
                                    isActive && "text-foreground"
                                  )}>

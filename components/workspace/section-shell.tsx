@@ -169,7 +169,7 @@ export function SectionShell({
                                         {secondaryListGroups.map((group) =>
                                             group.items.length > 0 ? (
                                                 <div key={group.id} className="space-y-1">
-                                                    <div className="px-3 pb-1 text-[10px] font-medium tracking-wider text-muted-foreground/70 uppercase">
+                                                    <div className="px-3 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground/70 uppercase">
                                                         {group.label}
                                                     </div>
                                                     {group.items.map((item) => (
@@ -241,6 +241,8 @@ export function SectionShell({
                     sidebarOpen ? "px-6" : "pl-16 pr-6"
                 )}>
                     <div className="flex min-w-0 items-center gap-3">
+                        {/* Accessibility: ensure each workspace section has a semantic heading */}
+                        <h1 className="sr-only">{sectionLabel}</h1>
                         {breadcrumbs ?? (
                             <Breadcrumb>
                                 <BreadcrumbList>
@@ -263,8 +265,12 @@ export function SectionShell({
 
                         {showSearch && (
                             <div className="relative hidden md:block">
+                                <label htmlFor="workspace-search" className="sr-only">
+                                    Search your workspace
+                                </label>
                                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
+                                    id="workspace-search"
                                     placeholder="Search your workspace..."
                                     className="h-9 w-64 bg-background pl-8 text-xs"
                                 />

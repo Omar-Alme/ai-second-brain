@@ -195,7 +195,11 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                 <div className="mb-6 flex items-center gap-3 border-b pb-6">
                     <div className="relative w-full max-w-2xl">
                         <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
+                        <label htmlFor="media-search" className="sr-only">
+                            Search media
+                        </label>
                         <Input
+                            id="media-search"
                             placeholder="Search anything..."
                             className={cn(
                                 "h-12 border-0 bg-transparent pl-8 text-2xl font-medium shadow-none",
@@ -231,10 +235,10 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
 
                     <div className="flex items-center justify-end gap-2">
                         <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                            <Button variant="ghost" size="icon-sm" className="rounded-full">
+                            <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="Grid view">
                                 <LayoutGrid className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon-sm" className="rounded-full">
+                            <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="List view">
                                 <List className="h-4 w-4" />
                             </Button>
                         </div>
@@ -326,6 +330,7 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                         className="hidden"
                         accept="image/*,application/pdf,audio/*"
                         disabled={isUploading}
+                        aria-label="Choose a file to upload"
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) onPickFile(file);

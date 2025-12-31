@@ -201,7 +201,11 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                 <div className="mb-6 flex items-center gap-3 border-b pb-6">
                     <div className="relative w-full max-w-2xl">
                         <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
+                        <label htmlFor="home-search" className="sr-only">
+                            Search items
+                        </label>
                         <Input
+                            id="home-search"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search anything..."
@@ -401,6 +405,7 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                         className="hidden"
                         accept="image/*,application/pdf,audio/*"
                         disabled={isUploading}
+                        aria-label="Choose a file to upload"
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
