@@ -59,14 +59,23 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isDeleting, startDelete] = useTransition();
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [query, setQuery] = useState("");
 
     const billing = useBilling();
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const isCreateBlocked = useMemo(() => {
         if (billing.status !== "ready") return false;
         const limit = billing.entitlements?.canvasesLimit ?? null;
         return limit !== null && canvases.length >= limit;
     }, [billing.entitlements?.canvasesLimit, billing.status, canvases.length]);
+
+    const visibleCanvases = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return canvases;
+        return canvases.filter((c) => (c.title || "Untitled").toLowerCase().includes(q));
+    }, [canvases, query]);
 
     const handleCreateCanvas = () => {
         if (isCreateBlocked) return;
@@ -144,6 +153,8 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                     <Input
                         id="canvas-search"
                         placeholder="Search anything..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
                         className={cn(
                             "h-12 border-0 bg-transparent pl-8 text-2xl font-medium shadow-none",
                             "placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -178,10 +189,30 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
 
                 <div className="flex items-center justify-end gap-2">
                     <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="Grid view">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "grid" && "bg-muted")}
+                            aria-label="Grid view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "grid");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <LayoutGrid className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="List view">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "list" && "bg-muted")}
+                            aria-label="List view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "list");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <List className="h-4 w-4" />
                         </Button>
                     </div>
@@ -202,13 +233,20 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                     </Button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {canvases.map((c) => (
+            <div
+                className={cn(
+                    view === "grid"
+                        ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                        : "space-y-2"
+                )}
+            >
+                {visibleCanvases.map((c) => (
                     <ResourceCard
                         key={c.id}
                         title={c.title || "Untitled"}
                         tagLabel="Canvas"
                         icon={<Grid2X2 className="h-3 w-3" />}
+                        variant={view}
                         selected={selectedIds.has(c.id)}
                         onSelectChange={(selected) => {
                             if (selected) {

@@ -59,14 +59,23 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isDeleting, startDelete] = useTransition();
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [query, setQuery] = useState("");
 
     const billing = useBilling();
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const isCreateBlocked = useMemo(() => {
         if (billing.status !== "ready") return false;
         const limit = billing.entitlements?.notesLimit ?? null;
         return limit !== null && notes.length >= limit;
     }, [billing.entitlements?.notesLimit, billing.status, notes.length]);
+
+    const visibleNotes = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return notes;
+        return notes.filter((n) => (n.title || "Untitled").toLowerCase().includes(q));
+    }, [notes, query]);
 
     const handleCreateNote = () => {
         if (isCreateBlocked) return;
@@ -156,6 +165,8 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                     <Input
                         id="notes-search"
                         placeholder="Search anything..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
                         className={cn(
                             "h-12 border-0 bg-transparent pl-8 text-2xl font-medium shadow-none",
                             "placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -190,10 +201,30 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
 
                 <div className="flex items-center justify-end gap-2">
                     <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="Grid view">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "grid" && "bg-muted")}
+                            aria-label="Grid view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "grid");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <LayoutGrid className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="List view">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "list" && "bg-muted")}
+                            aria-label="List view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "list");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <List className="h-4 w-4" />
                         </Button>
                     </div>
@@ -215,13 +246,20 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {notes.map((note) => (
+            <div
+                className={cn(
+                    view === "grid"
+                        ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                        : "space-y-2"
+                )}
+            >
+                {visibleNotes.map((note) => (
                     <ResourceCard
                         key={note.id}
                         title={note.title || "Untitled"}
                         tagLabel="Notes"
                         icon={<PenSquare className="h-3 w-3" />}
+                        variant={view}
                         selected={selectedIds.has(note.id)}
                         onSelectChange={(selected) => {
                             if (selected) {

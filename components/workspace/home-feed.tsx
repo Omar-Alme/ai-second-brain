@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     Grid2X2,
     Home as HomeIcon,
     Image as ImageIcon,
+    LayoutGrid,
+    List,
     PenSquare,
     Search,
     SlidersHorizontal,
@@ -94,6 +96,8 @@ function canPreviewInline(mimeType: string) {
 export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
     const { items, nowMs } = props;
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const [filterKind, setFilterKind] = useState<FilterKind>("all");
     const [query, setQuery] = useState("");
@@ -109,6 +113,8 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
     const billing = useBilling();
     const [limitOpen, setLimitOpen] = useState(false);
     const [limitText, setLimitText] = useState<string | null>(null);
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const visibleItems = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -241,6 +247,34 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                     </DropdownMenu>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className={cn("rounded-full", view === "grid" && "bg-muted")}
+                                aria-label="Grid view"
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("view", "grid");
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className={cn("rounded-full", view === "list" && "bg-muted")}
+                                aria-label="List view"
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("view", "list");
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
                         <Button
                             type="button"
                             size="sm"
@@ -347,7 +381,13 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                <div
+                    className={cn(
+                        view === "grid"
+                            ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                            : "space-y-2"
+                    )}
+                >
                     {visibleItems.map((item) => {
                         const key = `${item.kind}:${item.id}`;
                         const isSelected = selectedKeys.has(key);
@@ -358,6 +398,7 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                 title={item.title}
                                 tagLabel={item.tagLabel}
                                 icon={kindIcon(item.kind)}
+                                variant={view}
                                 selected={isSelected}
                                 onSelectChange={(selected) => {
                                     setSelectedKeys((prev) => {
