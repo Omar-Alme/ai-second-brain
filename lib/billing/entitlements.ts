@@ -40,17 +40,11 @@ function computeEntitlementsFromPlan(input: {
     };
   }
 
-  // Pro plan: "unlimited" notes/canvases come from feature presence in Clerk.
-  const notesUnlimited = includesFeature(featureSlugs, BILLING_CONFIG.featureSlugs.notes);
-  const canvasesUnlimited = includesFeature(featureSlugs, BILLING_CONFIG.featureSlugs.canvases);
-
-  const aiEnabled = includesFeature(featureSlugs, BILLING_CONFIG.featureSlugs.aiMessagesPerMonth);
-  const exportEnabled =
-    includesFeature(featureSlugs, BILLING_CONFIG.featureSlugs.export) &&
-    BILLING_CONFIG.limits.pro.exportEnabled;
-
-  const storageEnabled = includesFeature(featureSlugs, BILLING_CONFIG.featureSlugs.storageGb);
-
+  /**
+   * Pro plan:
+   * For MVP, Pro should remove Free limitations even if Clerk "features" are not configured.
+   * Clerk feature slugs can still be used for optional toggles later, but Pro must be usable immediately.
+   */
   return {
     planKey,
     planId,
@@ -58,12 +52,12 @@ function computeEntitlementsFromPlan(input: {
     subscriptionStatus,
     featureSlugs,
     isPro: true,
-    canExport: exportEnabled,
-    canUseAI: aiEnabled && BILLING_CONFIG.limits.pro.aiMessagesPerMonth > 0,
-    notesLimit: notesUnlimited ? null : BILLING_CONFIG.limits.free.notesMax,
-    canvasesLimit: canvasesUnlimited ? null : BILLING_CONFIG.limits.free.canvasesMax,
-    aiMessagesLimit: aiEnabled ? BILLING_CONFIG.limits.pro.aiMessagesPerMonth : 0,
-    storageLimitGb: storageEnabled ? BILLING_CONFIG.limits.pro.storageLimitGb : 0,
+    canExport: BILLING_CONFIG.limits.pro.exportEnabled,
+    canUseAI: BILLING_CONFIG.limits.pro.aiMessagesPerMonth > 0,
+    notesLimit: null,
+    canvasesLimit: null,
+    aiMessagesLimit: BILLING_CONFIG.limits.pro.aiMessagesPerMonth,
+    storageLimitGb: BILLING_CONFIG.limits.pro.storageLimitGb,
   };
 }
 
@@ -74,7 +68,7 @@ function computeEntitlementsFromPlan(input: {
  * Server-only (uses `clerkClient`).
  */
 export async function getBillingEntitlements(): Promise<BillingEntitlements> {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   if (!userId) {
     return computeEntitlementsFromPlan({
       planKey: BILLING_CONFIG.planKeys.free,
@@ -84,6 +78,13 @@ export async function getBillingEntitlements(): Promise<BillingEntitlements> {
       featureSlugs: [],
     });
   }
+
+  // Prefer Clerk's server-side plan check (fast + consistent), like `has({ plan: "pro" })`.
+  // This avoids cases where billing subscription APIs are delayed/cached or plan slugs differ.
+  const hasPro =
+    typeof has === "function"
+      ? has({ plan: BILLING_CONFIG.planKeys.pro as BillingPlanKey })
+      : false;
 
   const clerk = await clerkClient();
 
@@ -98,7 +99,7 @@ export async function getBillingEntitlements(): Promise<BillingEntitlements> {
       null;
 
     const plan = activeItem?.plan ?? null;
-    const planKey = plan?.slug ?? BILLING_CONFIG.planKeys.free;
+    const planKey = hasPro ? BILLING_CONFIG.planKeys.pro : (plan?.slug ?? BILLING_CONFIG.planKeys.free);
     const featureSlugs = plan?.features?.map((f) => f.slug) ?? [];
 
     return computeEntitlementsFromPlan({
@@ -109,9 +110,9 @@ export async function getBillingEntitlements(): Promise<BillingEntitlements> {
       featureSlugs,
     });
   } catch {
-    // If Billing isn't configured or user has no subscription, treat as Free.
+    // If Billing isn't configured or API fails, fall back to `has({ plan })`.
     return computeEntitlementsFromPlan({
-      planKey: BILLING_CONFIG.planKeys.free,
+      planKey: hasPro ? BILLING_CONFIG.planKeys.pro : BILLING_CONFIG.planKeys.free,
       planId: null,
       subscriptionId: null,
       subscriptionStatus: null,

@@ -9,6 +9,7 @@ import { SidebarContent } from "@/components/ui/sidebar";
 import { ChevronRight, PanelLeftOpen, PanelLeftClose, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useBilling } from "@/hooks/use-billing";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -118,6 +119,9 @@ export function SectionShell({
 }: SectionShellProps) {
     const crumb = breadcrumbLabel ?? sectionLabel;
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const billing = useBilling();
+    const planLabel =
+        billing.status === "ready" && billing.entitlements?.isPro ? "Pro" : "Free";
 
     return (
         <div className="flex h-svh w-full overflow-hidden">
@@ -280,6 +284,19 @@ export function SectionShell({
 
                     <div className="flex items-center gap-2">
                         <ThemeToggle className="rounded-full" />
+                        <span
+                            className={cn(
+                                "inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-medium leading-none",
+                                billing.status !== "ready" && "opacity-70",
+                                planLabel === "Pro"
+                                    ? "border-primary/30 bg-primary/10 text-primary"
+                                    : "border-border bg-muted/40 text-muted-foreground"
+                            )}
+                            aria-label={`Current plan: ${planLabel}`}
+                            title={`Current plan: ${planLabel}`}
+                        >
+                            {planLabel}
+                        </span>
                         {topBarRight}
                         {primaryActionLabel && (
                             <Button
