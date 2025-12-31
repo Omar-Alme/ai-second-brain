@@ -48,6 +48,8 @@ export function ResourceCard({
                     onClick={(e) => {
                         e.stopPropagation();
                     }}
+                    aria-label={selected ? `Deselect ${title}` : `Select ${title}`}
+                    title={selected ? "Deselect" : "Select"}
                     className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100"
                 />
             </div>

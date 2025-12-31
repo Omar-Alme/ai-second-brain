@@ -172,6 +172,7 @@ export function AppSidebar() {
         className="hidden"
         onChange={handleFileChange}
         accept="image/*,video/*,audio/*,application/pdf"
+        aria-label="Choose a file to upload"
       />
       <TooltipProvider delayDuration={100}>
          <Sidebar
@@ -275,8 +276,10 @@ export function AppSidebar() {
                                isActive={isActive}
                                className={cn(
                                  "group relative flex h-auto flex-col items-center justify-center gap-1.5 rounded-none py-2.5 text-xs",
-                                 "text-muted-foreground/90 transition-all duration-200",
-                                 !isActive && "hover:text-foreground"
+                                  // Override SidebarMenuButton's default hover/active background so only the icon wrapper highlights.
+                                  "hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent",
+                                  "text-muted-foreground/90 transition-all duration-200",
+                                  !isActive && "hover:text-foreground"
                                )}
                              >
                                <Link href={item.href} className="flex flex-col items-center gap-1.5 w-full">
