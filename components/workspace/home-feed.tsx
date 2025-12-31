@@ -49,6 +49,7 @@ import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas
 import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
+import { toast } from "sonner";
 
 type WorkspaceKind = "Notes" | "Canvas" | "Media";
 type FilterKind = "all" | WorkspaceKind;
@@ -255,9 +256,15 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                             return;
                                         }
 
+                                        toast.loading("Creating note…", { id: "home-create-note" });
                                         const id = await createNoteAction();
+                                        toast.success("Note created", { id: "home-create-note" });
                                         router.push(`/workspace/notes/${id}`);
                                     } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to create note",
+                                            { id: "home-create-note" }
+                                        );
                                         setLimitText(
                                             err instanceof Error ? err.message : "You’ve reached your plan limit."
                                         );
@@ -289,9 +296,15 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                             return;
                                         }
 
+                                        toast.loading("Creating canvas…", { id: "home-create-canvas" });
                                         const id = await createCanvasAction();
+                                        toast.success("Canvas created", { id: "home-create-canvas" });
                                         router.push(`/workspace/canvas/${id}`);
                                     } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to create canvas",
+                                            { id: "home-create-canvas" }
+                                        );
                                         setLimitText(
                                             err instanceof Error ? err.message : "You’ve reached your plan limit."
                                         );
@@ -408,12 +421,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
 
                             startUpload(async () => {
                                 try {
+                                    toast.loading("Uploading…", { id: "home-upload" });
                                     await uploadMediaFileAction(formData);
+                                    toast.success("Uploaded", { id: "home-upload" });
                                     setUploadOpen(false);
                                     router.refresh();
                                 } catch (err) {
                                     console.error(err);
-                                    setUploadError(err instanceof Error ? err.message : "Upload failed");
+                                    const msg = err instanceof Error ? err.message : "Upload failed";
+                                    toast.error(msg, { id: "home-upload" });
+                                    setUploadError(msg);
                                 } finally {
                                     e.currentTarget.value = "";
                                 }
@@ -445,12 +462,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             setUploadError(null);
                             startUpload(async () => {
                                 try {
+                                    toast.loading("Uploading…", { id: "home-upload" });
                                     await uploadMediaFileAction(formData);
+                                    toast.success("Uploaded", { id: "home-upload" });
                                     setUploadOpen(false);
                                     router.refresh();
                                 } catch (err) {
                                     console.error(err);
-                                    setUploadError(err instanceof Error ? err.message : "Upload failed");
+                                    const msg = err instanceof Error ? err.message : "Upload failed";
+                                    toast.error(msg, { id: "home-upload" });
+                                    setUploadError(msg);
                                 }
                             });
                         }}
@@ -588,11 +609,13 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
 
                                 startDelete(async () => {
                                     try {
+                                        toast.loading("Deleting…", { id: "home-bulk-delete" });
                                         await Promise.all([
                                             notes.length ? deleteNotesAction({ ids: notes }) : Promise.resolve(),
                                             canvases.length ? deleteCanvasesAction({ ids: canvases }) : Promise.resolve(),
                                             media.length ? deleteMediaFilesAction({ ids: media }) : Promise.resolve(),
                                         ]);
+                                        toast.success("Deleted", { id: "home-bulk-delete" });
 
                                         if (previewMediaId && media.includes(previewMediaId)) {
                                             setPreviewMediaId(null);
@@ -602,7 +625,10 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                         setSelectedKeys(new Set());
                                         router.refresh();
                                     } catch (err) {
-                                        console.error("Failed to bulk delete from home feed:", err);
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete selected items",
+                                            { id: "home-bulk-delete" }
+                                        );
                                     }
                                 });
                             }}

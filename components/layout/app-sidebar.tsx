@@ -43,6 +43,7 @@ import { createCanvasAction } from "@/app/workspace/canvas/actions";
 import { uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
+import { toast } from "sonner";
 
 const mainNav = [
   { title: "Home", href: "/workspace", icon: Home },
@@ -73,9 +74,12 @@ export function AppSidebar() {
     }
     startCreate(async () => {
       try {
+        toast.loading("Creating note…", { id: "create-note" });
         const id = await createNoteAction();
+        toast.success("Note created", { id: "create-note" });
         router.push(`/workspace/notes/${id}`);
       } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to create note", { id: "create-note" });
         setLimitText(err instanceof Error ? err.message : "Failed to create note");
         setLimitOpen(true);
       }
@@ -93,9 +97,12 @@ export function AppSidebar() {
     }
     startCreate(async () => {
       try {
+        toast.loading("Creating canvas…", { id: "create-canvas" });
         const id = await createCanvasAction();
+        toast.success("Canvas created", { id: "create-canvas" });
         router.push(`/workspace/canvas/${id}`);
       } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to create canvas", { id: "create-canvas" });
         setLimitText(err instanceof Error ? err.message : "Failed to create canvas");
         setLimitOpen(true);
       }
@@ -134,12 +141,15 @@ export function AppSidebar() {
 
     startUpload(async () => {
       try {
+        toast.loading("Uploading…", { id: "upload-media" });
         const formData = new FormData();
         formData.append("file", file);
         await uploadMediaFileAction(formData);
+        toast.success("Uploaded", { id: "upload-media" });
         router.push("/workspace/media");
         router.refresh();
       } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to upload media", { id: "upload-media" });
         setLimitText(err instanceof Error ? err.message : "Failed to upload media");
         setLimitOpen(true);
       } finally {

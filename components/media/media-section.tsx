@@ -39,6 +39,7 @@ import {
 import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
+import { toast } from "sonner";
 
 type MediaItem = {
     id: string;
@@ -125,12 +126,16 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
 
         startUpload(async () => {
             try {
+                toast.loading("Uploading…", { id: "media-upload" });
                 await uploadMediaFileAction(formData);
+                toast.success("Uploaded", { id: "media-upload" });
                 setUploadOpen(false);
                 router.refresh();
             } catch (e) {
                 console.error(e);
-                setUploadError(e instanceof Error ? e.message : "Upload failed");
+                const msg = e instanceof Error ? e.message : "Upload failed";
+                toast.error(msg, { id: "media-upload" });
+                setUploadError(msg);
             }
         });
     };
@@ -461,7 +466,9 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                                 const ids = Array.from(selectedIds);
                                 startDeleteBulk(async () => {
                                     try {
+                                        toast.loading("Deleting files…", { id: "media-bulk-delete" });
                                         await deleteMediaFilesAction({ ids });
+                                        toast.success("Files deleted", { id: "media-bulk-delete" });
                                         setBulkDeleteOpen(false);
                                         setSelectedIds(new Set());
                                         if (previewId && ids.includes(previewId)) {
@@ -469,7 +476,10 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                                         }
                                         router.refresh();
                                     } catch (err) {
-                                        console.error("Failed to bulk delete media files:", err);
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete files",
+                                            { id: "media-bulk-delete" }
+                                        );
                                     }
                                 });
                             }}

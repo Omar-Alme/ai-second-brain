@@ -6,6 +6,7 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { CheckoutButton } from "@clerk/nextjs/experimental";
 import { Button } from "@/components/ui/button";
 import { BILLING_CONFIG } from "@/lib/billing/config";
+import { toast } from "sonner";
 
 const BILLING_REFRESH_EVENT = "noma:billing-refresh";
 
@@ -72,8 +73,11 @@ export function UpgradeToProButton(props: {
           <CheckoutButton
             planId={planId}
             onSubscriptionComplete={async () => {
+              toast.loading("Upgrading…", { id: "billing-upgrade" });
               // Wait for Clerk to process the subscription and retry until we see pro status
-              await waitForBillingUpdate();
+              const ok = await waitForBillingUpdate();
+              if (ok) toast.success("You’re now on Pro 🎉", { id: "billing-upgrade" });
+              else toast.success("Upgrade complete (syncing…)", { id: "billing-upgrade" });
               // Force router refresh to update server components
               router.refresh();
             }}

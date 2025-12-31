@@ -3,6 +3,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { CLERK_APPEARANCE } from "@/lib/clerk/appearance";
+import { Toaster } from "@/components/ui/sonner";
 
 export function Providers(props: {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export function Providers(props: {
         afterSignOutUrl="/"
       >
         {props.children}
+        <Toaster />
       </ClerkProvider>
     </ThemeProvider>
   );

@@ -31,6 +31,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 type NoteListItem = {
     id: string;
@@ -72,10 +73,14 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
         startTransition(async () => {
             try {
                 setCreateError(null);
+                toast.loading("Creating note…", { id: "notes-create" });
                 const id = await createNoteAction();
+                toast.success("Note created", { id: "notes-create" });
                 router.push(`/workspace/notes/${id}`);
             } catch (err) {
-                setCreateError(err instanceof Error ? err.message : "Failed to create note");
+                const msg = err instanceof Error ? err.message : "Failed to create note";
+                toast.error(msg, { id: "notes-create" });
+                setCreateError(msg);
             }
         });
     };
@@ -259,12 +264,17 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                                 const ids = Array.from(selectedIds);
                                 startDelete(async () => {
                                     try {
+                                        toast.loading("Deleting notes…", { id: "notes-bulk-delete" });
                                         await deleteNotesAction({ ids });
+                                        toast.success("Notes deleted", { id: "notes-bulk-delete" });
                                         setBulkDeleteOpen(false);
                                         setSelectedIds(new Set());
                                         router.refresh();
                                     } catch (err) {
-                                        console.error("Failed to delete notes:", err);
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete notes",
+                                            { id: "notes-bulk-delete" }
+                                        );
                                     }
                                 });
                             }}

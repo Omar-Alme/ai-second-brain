@@ -31,6 +31,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 type CanvasListItem = {
     id: string;
@@ -72,10 +73,14 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
         startTransition(async () => {
             try {
                 setCreateError(null);
+                toast.loading("Creating canvas…", { id: "canvas-create" });
                 const id = await createCanvasAction();
+                toast.success("Canvas created", { id: "canvas-create" });
                 router.push(`/workspace/canvas/${id}`);
             } catch (err) {
-                setCreateError(err instanceof Error ? err.message : "Failed to create canvas");
+                const msg = err instanceof Error ? err.message : "Failed to create canvas";
+                toast.error(msg, { id: "canvas-create" });
+                setCreateError(msg);
             }
         });
     };
@@ -246,12 +251,17 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                                 const ids = Array.from(selectedIds);
                                 startDelete(async () => {
                                     try {
+                                        toast.loading("Deleting canvases…", { id: "canvas-bulk-delete" });
                                         await deleteCanvasesAction({ ids });
+                                        toast.success("Canvases deleted", { id: "canvas-bulk-delete" });
                                         setBulkDeleteOpen(false);
                                         setSelectedIds(new Set());
                                         router.refresh();
                                     } catch (err) {
-                                        console.error("Failed to delete canvases:", err);
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete canvases",
+                                            { id: "canvas-bulk-delete" }
+                                        );
                                     }
                                 });
                             }}

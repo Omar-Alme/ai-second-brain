@@ -8,7 +8,19 @@ import { MoreHorizontal, PenSquare, PlusSquare, Trash2 } from "lucide-react";
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { InlineTitle } from "@/components/workspace/inline-title";
-import { NoteEditor } from "@/components/notes/note-editor";
+import dynamic from "next/dynamic";
+const NoteEditor = dynamic(
+    () => import("@/components/notes/note-editor").then((m) => m.NoteEditor),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="p-6 text-sm text-muted-foreground">
+                Loading editor…
+            </div>
+        ),
+    }
+);
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
     Breadcrumb,
@@ -164,9 +176,18 @@ export function NoteDetailView(props: {
                                     disabled={isDeleting}
                                     onClick={() => {
                                         startDelete(async () => {
-                                            await deleteNoteAction({ id: noteId });
-                                            setConfirmOpen(false);
-                                            router.replace("/workspace/notes");
+                                            try {
+                                                toast.loading("Deleting note…", { id: "note-delete" });
+                                                await deleteNoteAction({ id: noteId });
+                                                toast.success("Note deleted", { id: "note-delete" });
+                                                setConfirmOpen(false);
+                                                router.replace("/workspace/notes");
+                                            } catch (err) {
+                                                toast.error(
+                                                    err instanceof Error ? err.message : "Failed to delete note",
+                                                    { id: "note-delete" }
+                                                );
+                                            }
                                         });
                                     }}
                                 >
