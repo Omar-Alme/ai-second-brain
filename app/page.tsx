@@ -18,6 +18,7 @@ import { LogoCloud } from "@/components/ui/logo-cloud-3";
 import HoverFooter from "@/components/ui/hover-footer";
 import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import { Features as Features8 } from "@/components/blocks/features-8";
+import DisplayCards from "@/components/ui/display-cards";
 
 const logos = [
   {
@@ -86,20 +87,32 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="grid w-full max-w-md grid-cols-3 gap-3">
-              {[
-                { label: "Notes", value: "Fast" },
-                { label: "Canvas", value: "Visual" },
-                { label: "Media", value: "Organized" },
-              ].map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-2xl border border-border/60 bg-background/40 p-4 text-center shadow-xs backdrop-blur"
-                >
-                  <div className="text-sm font-semibold text-foreground">{s.value}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
-                </div>
-              ))}
+            <div className="w-full max-w-md">
+              <DisplayCards
+                cards={[
+                  {
+                    title: "Notes",
+                    description: "Capture fast",
+                    date: "TipTap JSON",
+                    className:
+                      "[grid-area:stack] hover:-translate-y-10 before:absolute before:left-0 before:top-0 before:h-full before:w-full before:rounded-xl before:outline before:outline-1 before:outline-border before:bg-background/50 before:content-[''] grayscale hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0",
+                  },
+                  {
+                    title: "Canvas",
+                    description: "Think visually",
+                    date: "tldraw JSON",
+                    className:
+                      "[grid-area:stack] translate-x-16 translate-y-10 hover:-translate-y-1 before:absolute before:left-0 before:top-0 before:h-full before:w-full before:rounded-xl before:outline before:outline-1 before:outline-border before:bg-background/50 before:content-[''] grayscale hover:before:opacity-0 before:transition-opacity before:duration-700 hover:grayscale-0",
+                  },
+                  {
+                    title: "Media",
+                    description: "Stay organized",
+                    date: "Upload + preview",
+                    className:
+                      "[grid-area:stack] translate-x-32 translate-y-20 hover:translate-y-10",
+                  },
+                ]}
+              />
             </div>
           </div>
 
