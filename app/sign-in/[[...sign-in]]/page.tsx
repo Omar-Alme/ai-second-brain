@@ -1,32 +1,27 @@
+"use client";
+
+import useCurrentTheme from "@/hooks/use-current-theme";
 import { SignIn } from "@clerk/nextjs";
-import { CLERK_APPEARANCE } from "@/lib/clerk/appearance";
+import { dark, shadcn } from "@clerk/themes";
 
 export default function Page() {
+  const currentTheme = useCurrentTheme();
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Sign in to continue to Noma.
-          </p>
+    <div className="flex w-full max-w-3xl flex-col mx-auto">
+      <section className="space-y-6 pt-[16vh] 2xl:pt-48">
+        <div className="flex flex-col items-center">
+          <SignIn
+            appearance={{
+              baseTheme: currentTheme === "dark" ? [shadcn, dark] : shadcn,
+              elements: {
+                // Ensure solid, readable surface and match your previous app.
+                cardBox: "rounded-lg border shadow-none bg-card",
+                card: "rounded-lg border shadow-none bg-card",
+              },
+            }}
+          />
         </div>
-
-        <SignIn
-          appearance={{
-            ...CLERK_APPEARANCE,
-            elements: {
-              ...CLERK_APPEARANCE.elements,
-              headerTitle: "hidden",
-              headerSubtitle: "hidden",
-            },
-          }}
-        />
-
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          By continuing, you agree to our Terms & Privacy.
-        </p>
-      </div>
+      </section>
     </div>
   );
 }

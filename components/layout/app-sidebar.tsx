@@ -23,7 +23,7 @@ import {
   Grid2X2,
   FileUp,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { UserControl } from "@/components/clerk/user-control";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -62,7 +62,6 @@ export function AppSidebar() {
   const billing = useBilling();
   const [limitOpen, setLimitOpen] = useState(false);
   const [limitText, setLimitText] = useState<string | null>(null);
-
   const handleCreateNote = () => {
     if (billing.status === "ready" && billing.entitlements) {
       const limit = billing.entitlements.notesLimit;
@@ -334,13 +333,7 @@ export function AppSidebar() {
                  >
                    <div className="flex w-full items-center justify-center p-2">
                      <div className="rounded-xl p-2 backdrop-blur-sm border border-transparent bg-transparent transition-all duration-200 hover:border-transparent hover:scale-105 overflow-visible">
-                       <UserButton
-                         appearance={{
-                           elements: {
-                             avatarBox: "h-8 w-8 rounded-lg",
-                           },
-                         }}
-                       />
+                       <UserControl />
                      </div>
                    </div>
                  </SidebarMenuButton>

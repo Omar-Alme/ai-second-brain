@@ -15,11 +15,11 @@ import {
   PenTool,
   Wrench,
   Users,
-  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { Hero } from "@/components/landing/hero";
-import { PricingTable } from "@clerk/nextjs";
+import { ThemedPricingTable } from "@/components/billing/themed-pricing-table";
+import { Testimonials3D } from "@/components/landing/testimonials-3d";
 
 export default function LandingPage() {
   return (
@@ -27,8 +27,8 @@ export default function LandingPage() {
       {/* Page background glow (kept behind Hero canvas) */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
         <div className="absolute -top-48 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute top-[30rem] -left-32 h-[520px] w-[520px] rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute bottom-[-12rem] -right-40 h-[520px] w-[520px] rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute top-120 -left-32 h-[520px] w-[520px] rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute -bottom-48 -right-40 h-[520px] w-[520px] rounded-full bg-primary/10 blur-3xl" />
       </div>
 
       <Navbar />
@@ -294,46 +294,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                quote:
-                  "Finally a workspace that keeps me focused. Notes + canvas + AI feels seamless.",
-                name: "Amina",
-                role: "Product Designer",
-              },
-              {
-                quote:
-                  "I can capture quickly, then connect everything later. It’s the calmest tool I’ve tried.",
-                name: "Omar",
-                role: "Student",
-              },
-              {
-                quote:
-                  "The UI stays out of the way. I spend more time thinking and less time organizing.",
-                name: "Sara",
-                role: "Engineer",
-              },
-            ].map((t) => (
-              <div
-                key={t.name}
-                className="rounded-3xl border border-border bg-background/60 p-6 shadow-sm backdrop-blur"
-              >
-                <div className="flex items-center gap-1 text-primary/80">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-primary/20" />
-                  ))}
-                </div>
-                <p className="mt-4 text-sm text-foreground/90">“{t.quote}”</p>
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10" />
-                  <div className="leading-tight">
-                    <div className="text-sm font-semibold">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex justify-center">
+            <Testimonials3D />
           </div>
         </div>
       </section>
@@ -355,13 +317,7 @@ export default function LandingPage() {
           </div>
 
           <div className="rounded-3xl border border-border bg-background/60 p-4 shadow-sm backdrop-blur sm:p-6">
-            <PricingTable
-              appearance={{
-                elements: {
-                  rootBox: "w-full",
-                },
-              }}
-            />
+            <ThemedPricingTable />
           </div>
         </div>
       </section>

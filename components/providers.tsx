@@ -9,16 +9,16 @@ export function Providers(props: {
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <ClerkProvider
-        appearance={CLERK_APPEARANCE}
-        signInFallbackRedirectUrl="/workspace"
-        afterSignOutUrl="/"
-      >
-        {props.children}
+    <ClerkProvider
+      appearance={CLERK_APPEARANCE}
+      signInFallbackRedirectUrl="/workspace"
+      afterSignOutUrl="/"
+    >
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <Toaster />
-      </ClerkProvider>
-    </ThemeProvider>
+        {props.children}
+      </ThemeProvider>
+    </ClerkProvider>
   );
 }
 
