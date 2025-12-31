@@ -190,8 +190,8 @@ export default function HoverFooter() {
   ] as const;
 
   return (
-    <footer className="relative h-fit overflow-hidden rounded-3xl border border-border bg-background/30 shadow-sm backdrop-blur">
-      <div className="relative z-10 mx-auto max-w-7xl px-6 py-14 md:px-10">
+    <footer className="relative mt-24 border-t border-border/60 bg-background/30 backdrop-blur">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-12 pb-12 md:grid-cols-2 lg:grid-cols-4 md:gap-8 lg:gap-16">
           {/* Brand */}
           <div className="flex flex-col space-y-4">
@@ -253,7 +253,7 @@ export default function HoverFooter() {
           </div>
         </div>
 
-        <hr className="my-8 border-t border-border" />
+        <hr className="my-8 border-t border-border/60" />
 
         <div className="flex flex-col items-center justify-between gap-4 text-sm md:flex-row md:gap-0">
           <div className="flex space-x-6 text-muted-foreground">
@@ -276,7 +276,7 @@ export default function HoverFooter() {
       </div>
 
       {/* Text hover effect */}
-      <div className="hidden h-[30rem] -mt-52 -mb-36 lg:flex">
+      <div className="hidden h-120 -mt-52 -mb-36 lg:flex">
         <TextHoverEffect text="Noma" className="z-10" />
       </div>
 
