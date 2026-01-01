@@ -203,7 +203,7 @@ export function AppSidebar() {
                               <SidebarMenuButton
                                 className={cn(
                                   "mx-auto mb-5 flex h-10 w-10 items-center justify-center rounded-full",
-                                  "bg-gradient-to-br from-primary/90 to-primary/80 backdrop-blur-md",
+                                  "bg-linear-to-br from-primary/90 to-primary/80 backdrop-blur-md",
                                   "border border-primary/30 text-primary-foreground",
                                   "shadow-lg shadow-primary/25",
                                   "transition-all duration-200",

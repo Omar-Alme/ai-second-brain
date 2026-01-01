@@ -2,15 +2,25 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { CLERK_APPEARANCE } from "@/lib/clerk/appearance";
 import { Toaster } from "@/components/ui/sonner";
+import { dark, shadcn } from "@clerk/themes";
+import useCurrentTheme from "@/hooks/use-current-theme";
+
 
 export function Providers(props: {
   children: React.ReactNode;
 }) {
+  const currentTheme = useCurrentTheme();
   return (
     <ClerkProvider
-      appearance={CLERK_APPEARANCE}
+      appearance={{
+        baseTheme: currentTheme === "dark" ? [shadcn, dark] : shadcn,
+        elements: {
+          userButton: "rounded-md!",
+          userButtonAvatarBox: "rounded-md! size-7!",
+          userButtonTrigger: "rounded-md!",
+        },
+      }}
       signInFallbackRedirectUrl="/workspace"
       afterSignOutUrl="/"
     >
