@@ -172,6 +172,9 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
               Built for everyone who thinks
             </h2>
+            <p className="mt-3 text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
+              Pick a starting point — the workspace adapts to how you think.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -179,37 +182,75 @@ export default function LandingPage() {
               {
                 icon: GraduationCap,
                 title: "Students",
-                description:
-                  "Organize research, connect concepts, and learn faster.",
+                description: "Organize research, connect concepts, and learn faster.",
+                bullets: ["Capture lecture notes", "Link sources to ideas", "Summarize with structure"],
               },
               {
                 icon: PenTool,
                 title: "Creators",
-                description:
-                  "Capture inspiration and turn messy ideas into output.",
+                description: "Turn messy inspiration into consistent output.",
+                bullets: ["Idea inbox for drafts", "Storyboard on canvas", "Keep assets in Media"],
               },
               {
                 icon: Wrench,
                 title: "Builders",
-                description:
-                  "Plan projects, document processes, track progress.",
+                description: "Plan projects, document processes, track progress.",
+                bullets: ["Specs + checklists", "System diagrams", "Reference docs nearby"],
               },
               {
                 icon: Users,
                 title: "Thinkers",
-                description:
-                  "Explore ideas deeply and build your own knowledge system.",
+                description: "Explore ideas deeply and build your knowledge system.",
+                bullets: ["Daily thinking notes", "Concept maps", "Capture what matters"],
               },
-            ].map((useCase, index) => (
+            ].map((useCase) => (
               <div
-                key={index}
-                className="rounded-3xl border border-border bg-background/60 p-6 text-center shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-md"
+                key={useCase.title}
+                tabIndex={0}
+                className="group relative rounded-3xl border border-border/60 bg-background/35 p-6 shadow-xs backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-background/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
-                  <useCase.icon className="w-6 h-6 text-primary" />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+                >
+                  <div className="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-primary/10 blur-2xl" />
+                  <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-primary/8 blur-2xl" />
                 </div>
-                <h3 className="mt-4 text-base font-semibold">{useCase.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{useCase.description}</p>
+
+                <div className="relative flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/60 bg-primary/10">
+                    <useCase.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-foreground">{useCase.title}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{useCase.description}</p>
+                  </div>
+                </div>
+
+                <div className="relative mt-5 overflow-hidden">
+                  <ul
+                    className="space-y-2 text-sm text-muted-foreground max-h-0 opacity-0 transition-all duration-300 group-hover:max-h-40 group-hover:opacity-100 group-focus-visible:max-h-40 group-focus-visible:opacity-100"
+                  >
+                    {useCase.bullets.map((b) => (
+                      <li key={b} className="flex items-center gap-2">
+                        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+                        <span className="truncate">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="relative mt-6 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    Tip: press <span className="font-medium text-foreground">Tab</span> to preview
+                  </span>
+                  <Link
+                    href="/sign-up"
+                    className="text-xs font-medium text-primary hover:underline underline-offset-4"
+                  >
+                    Start free
+                  </Link>
+                </div>
               </div>
             ))}
           </div>

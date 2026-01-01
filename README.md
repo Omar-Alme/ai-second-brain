@@ -201,7 +201,7 @@ This app uses `next-themes` for light/dark mode. Clerk components follow the sam
 
 #### Helhetsupplevelsen
 
-- [ ] Fri från tekniska fel (döda länkar/kraschande sidor), konsekvent design och obruten navigation.
+- [x] Fri från tekniska fel (döda länkar/kraschande sidor), konsekvent design och obruten navigation.
 
 ### Väl godkänd (VG)
 
@@ -209,15 +209,15 @@ This app uses `next-themes` for light/dark mode. Clerk components follow the sam
 
 #### Design och prototyping
 
-- [ ] Implementera interaktivitet i prototypen som demonstrerar användarflöden.
-- [ ] Prototypen är väldigt lik den färdiga produkten.
-- [ ] Designen följer, utan undantag, WCAG 2.1 nivå A och AA.
+- [x] Implementera interaktivitet i prototypen som demonstrerar användarflöden.
+- [x] Prototypen är väldigt lik den färdiga produkten.
+- [x] Designen följer, utan undantag, WCAG 2.1 nivå A och AA.
 
 #### Applikationsutveckling
 
 - [x] Använd en state management-lösning (t.ex. Redux/Pinia) för global state.
-- [ ] Koden följer, utan undantag, WCAG 2.1 nivå A och AA.
-- [ ] Testad i WebAIM WAVE utan fel på error- och varnings-nivåer.
+- [x] Koden följer, utan undantag, WCAG 2.1 nivå A och AA.
+- [x] Testad i WebAIM WAVE utan fel på error- och varnings-nivåer.
 - [x] Optimering: återanvänder kod/komponenter och använder optimeringstekniker där det behövs.
 - [x] Implementera CRUD (Create/Read/Update/Delete) med säker hantering av användardata.
 - [x] Implementera en säker autentiseringslösning för databasen (endast behöriga får åtkomst). (Clerk auth + per-user queries)
