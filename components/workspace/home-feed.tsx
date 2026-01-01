@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     Grid2X2,
     Home as HomeIcon,
     Image as ImageIcon,
+    LayoutGrid,
+    List,
     PenSquare,
     Search,
     SlidersHorizontal,
@@ -15,6 +17,7 @@ import {
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
+import { SelectionActionBar } from "@/components/workspace/selection-action-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -33,11 +36,22 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { createNoteAction } from "@/app/workspace/notes/actions";
-import { createCanvasAction } from "@/app/workspace/canvas/actions";
-import { uploadMediaFileAction } from "@/app/workspace/media/actions";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { createNoteAction, deleteNotesAction } from "@/app/workspace/notes/actions";
+import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas/actions";
+import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
+import { toast } from "sonner";
 
 type WorkspaceKind = "Notes" | "Canvas" | "Media";
 type FilterKind = "all" | WorkspaceKind;
@@ -82,6 +96,8 @@ function canPreviewInline(mimeType: string) {
 export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
     const { items, nowMs } = props;
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     const [filterKind, setFilterKind] = useState<FilterKind>("all");
     const [query, setQuery] = useState("");
@@ -91,9 +107,14 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isCreating, startCreate] = useTransition();
     const [isUploading, startUpload] = useTransition();
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [isDeleting, startDelete] = useTransition();
     const billing = useBilling();
     const [limitOpen, setLimitOpen] = useState(false);
     const [limitText, setLimitText] = useState<string | null>(null);
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const visibleItems = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -144,6 +165,21 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
         };
     }, [items, previewMediaId]);
 
+    const selectedItems = useMemo(() => {
+        if (selectedKeys.size === 0) return [];
+        const keys = selectedKeys;
+        return items.filter((i) => keys.has(`${i.kind}:${i.id}`));
+    }, [items, selectedKeys]);
+
+    const handleDeleteSelected = () => {
+        if (selectedKeys.size === 0) return;
+        setBulkDeleteOpen(true);
+    };
+
+    const handleClearSelection = () => {
+        setSelectedKeys(new Set());
+    };
+
     return (
         <>
             <LimitReachedDialog
@@ -171,7 +207,11 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                 <div className="mb-6 flex items-center gap-3 border-b pb-6">
                     <div className="relative w-full max-w-2xl">
                         <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
+                        <label htmlFor="home-search" className="sr-only">
+                            Search items
+                        </label>
                         <Input
+                            id="home-search"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search anything..."
@@ -207,6 +247,34 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                     </DropdownMenu>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className={cn("rounded-full", view === "grid" && "bg-muted")}
+                                aria-label="Grid view"
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("view", "grid");
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className={cn("rounded-full", view === "list" && "bg-muted")}
+                                aria-label="List view"
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("view", "list");
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
+                                <List className="h-4 w-4" />
+                            </Button>
+                        </div>
                         <Button
                             type="button"
                             size="sm"
@@ -226,9 +294,15 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                             return;
                                         }
 
+                                        toast.loading("Creating note…", { id: "home-create-note" });
                                         const id = await createNoteAction();
+                                        toast.success("Note created", { id: "home-create-note" });
                                         router.push(`/workspace/notes/${id}`);
                                     } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to create note",
+                                            { id: "home-create-note" }
+                                        );
                                         setLimitText(
                                             err instanceof Error ? err.message : "You’ve reached your plan limit."
                                         );
@@ -260,9 +334,15 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                             return;
                                         }
 
+                                        toast.loading("Creating canvas…", { id: "home-create-canvas" });
                                         const id = await createCanvasAction();
+                                        toast.success("Canvas created", { id: "home-create-canvas" });
                                         router.push(`/workspace/canvas/${id}`);
                                     } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to create canvas",
+                                            { id: "home-create-canvas" }
+                                        );
                                         setLimitText(
                                             err instanceof Error ? err.message : "You’ve reached your plan limit."
                                         );
@@ -301,37 +381,55 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                <div
+                    className={cn(
+                        view === "grid"
+                            ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                            : "space-y-2"
+                    )}
+                >
                     {visibleItems.map((item) => {
-                        const card = (
+                        const key = `${item.kind}:${item.id}`;
+                        const isSelected = selectedKeys.has(key);
+
+                        return (
                             <ResourceCard
+                                key={key}
                                 title={item.title}
                                 tagLabel={item.tagLabel}
                                 icon={kindIcon(item.kind)}
-                                className="cursor-pointer hover:shadow-md transition-shadow hover:border-border/80"
+                                variant={view}
+                                selected={isSelected}
+                                onSelectChange={(selected) => {
+                                    setSelectedKeys((prev) => {
+                                        const next = new Set(prev);
+                                        if (selected) next.add(key);
+                                        else next.delete(key);
+                                        return next;
+                                    });
+                                }}
+                                onClick={() => {
+                                    // When selecting, don't navigate/open preview.
+                                    if (selectedKeys.size > 0) return;
+
+                                    if (item.kind === "Media") {
+                                        setPreviewMediaId(item.id);
+                                        return;
+                                    }
+
+                                    router.push(item.href);
+                                }}
                             />
-                        );
-
-                        if (item.kind === "Media") {
-                            return (
-                                <button
-                                    key={`${item.kind}-${item.id}`}
-                                    type="button"
-                                    className="block text-left"
-                                    onClick={() => setPreviewMediaId(item.id)}
-                                >
-                                    {card}
-                                </button>
-                            );
-                        }
-
-                        return (
-                            <Link key={`${item.kind}-${item.id}`} href={item.href} className="block">
-                                {card}
-                            </Link>
                         );
                     })}
                 </div>
+
+                <SelectionActionBar
+                    selectedCount={selectedKeys.size}
+                    onDelete={handleDeleteSelected}
+                    onClearSelection={handleClearSelection}
+                    isDeleting={isDeleting}
+                />
             </SectionShell>
 
             {/* Upload from Home */}
@@ -348,6 +446,7 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                         className="hidden"
                         accept="image/*,application/pdf,audio/*"
                         disabled={isUploading}
+                        aria-label="Choose a file to upload"
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -368,12 +467,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
 
                             startUpload(async () => {
                                 try {
+                                    toast.loading("Uploading…", { id: "home-upload" });
                                     await uploadMediaFileAction(formData);
+                                    toast.success("Uploaded", { id: "home-upload" });
                                     setUploadOpen(false);
                                     router.refresh();
                                 } catch (err) {
                                     console.error(err);
-                                    setUploadError(err instanceof Error ? err.message : "Upload failed");
+                                    const msg = err instanceof Error ? err.message : "Upload failed";
+                                    toast.error(msg, { id: "home-upload" });
+                                    setUploadError(msg);
                                 } finally {
                                     e.currentTarget.value = "";
                                 }
@@ -405,12 +508,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             setUploadError(null);
                             startUpload(async () => {
                                 try {
+                                    toast.loading("Uploading…", { id: "home-upload" });
                                     await uploadMediaFileAction(formData);
+                                    toast.success("Uploaded", { id: "home-upload" });
                                     setUploadOpen(false);
                                     router.refresh();
                                 } catch (err) {
                                     console.error(err);
-                                    setUploadError(err instanceof Error ? err.message : "Upload failed");
+                                    const msg = err instanceof Error ? err.message : "Upload failed";
+                                    toast.error(msg, { id: "home-upload" });
+                                    setUploadError(msg);
                                 }
                             });
                         }}
@@ -507,6 +614,76 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Bulk delete confirm (Home feed selection) */}
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete {selectedKeys.size} {selectedKeys.size === 1 ? "item" : "items"}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the selected items from your workspace.
+                            {selectedItems.length > 0 && (
+                                <>
+                                    {" "}
+                                    ({selectedItems.slice(0, 3).map((i) => i.title).join(", ")}
+                                    {selectedItems.length > 3 ? ", …" : ""})
+                                </>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting || selectedKeys.size === 0}
+                            onClick={() => {
+                                const notes: string[] = [];
+                                const canvases: string[] = [];
+                                const media: string[] = [];
+
+                                for (const key of selectedKeys) {
+                                    const idx = key.indexOf(":");
+                                    if (idx === -1) continue;
+                                    const kind = key.slice(0, idx);
+                                    const id = key.slice(idx + 1);
+                                    if (!id) continue;
+                                    if (kind === "Notes") notes.push(id);
+                                    else if (kind === "Canvas") canvases.push(id);
+                                    else if (kind === "Media") media.push(id);
+                                }
+
+                                startDelete(async () => {
+                                    try {
+                                        toast.loading("Deleting…", { id: "home-bulk-delete" });
+                                        await Promise.all([
+                                            notes.length ? deleteNotesAction({ ids: notes }) : Promise.resolve(),
+                                            canvases.length ? deleteCanvasesAction({ ids: canvases }) : Promise.resolve(),
+                                            media.length ? deleteMediaFilesAction({ ids: media }) : Promise.resolve(),
+                                        ]);
+                                        toast.success("Deleted", { id: "home-bulk-delete" });
+
+                                        if (previewMediaId && media.includes(previewMediaId)) {
+                                            setPreviewMediaId(null);
+                                        }
+
+                                        setBulkDeleteOpen(false);
+                                        setSelectedKeys(new Set());
+                                        router.refresh();
+                                    } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete selected items",
+                                            { id: "home-bulk-delete" }
+                                        );
+                                    }
+                                });
+                            }}
+                        >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

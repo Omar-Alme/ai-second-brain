@@ -1,37 +1,30 @@
+"use client";
+
+import useCurrentTheme from "@/hooks/use-current-theme";
 import { SignIn } from "@clerk/nextjs";
+import { dark, shadcn } from "@clerk/themes";
+import { BeamsBackground } from "@/components/ui/beams-background";
 
 export default function Page() {
+  const currentTheme = useCurrentTheme();
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Sign in to continue to Noma.
-          </p>
-        </div>
-
-        <SignIn
-          appearance={{
-            elements: {
-              card: "shadow-lg border border-border rounded-2xl",
-              headerTitle: "hidden",
-              headerSubtitle: "hidden",
-              socialButtonsBlockButton:
-                "rounded-xl border border-border hover:bg-muted transition",
-              formButtonPrimary:
-                "rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition",
-              formFieldInput:
-                "rounded-xl border border-border focus:ring-2 focus:ring-primary/20",
-              footerActionLink: "text-primary hover:underline",
-            },
-          }}
-        />
-
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          By continuing, you agree to our Terms & Privacy.
-        </p>
+    <BeamsBackground intensity="medium">
+      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 sm:px-6">
+        <section className="space-y-6 pt-[16vh] 2xl:pt-48">
+          <div className="flex flex-col items-center">
+            <SignIn
+              appearance={{
+                baseTheme: currentTheme === "dark" ? [shadcn, dark] : shadcn,
+                elements: {
+                  // Ensure solid, readable surface and match your previous app.
+                  cardBox: "rounded-lg border shadow-none bg-card",
+                  card: "rounded-lg border shadow-none bg-card",
+                },
+              }}
+            />
+          </div>
+        </section>
       </div>
-    </div>
+    </BeamsBackground>
   );
 }

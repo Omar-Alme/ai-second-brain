@@ -17,7 +17,7 @@ export function Hero() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mt-16 flex flex-col items-center justify-center text-center">
           {/* Top pill */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
             <Sparkles className="h-4 w-4 text-primary" />
             <span>Introducing Noma — calm second brain</span>
             <a
@@ -29,7 +29,7 @@ export function Hero() {
           </div>
 
           {/* Frame */}
-          <div className="relative mx-auto w-full max-w-6xl rounded-3xl border border-border bg-white/60 p-6 shadow-[0_24px_80px_-50px_rgba(0,0,0,0.25)] backdrop-blur md:p-12">
+          <div className="relative mx-auto w-full max-w-6xl rounded-3xl border border-border bg-background/60 p-6 shadow-[0_24px_80px_-50px_rgba(0,0,0,0.25)] backdrop-blur md:p-12">
             {/* corner plus icons */}
             <Plus className="absolute -left-4 -top-4 h-8 w-8 text-primary/70" />
             <Plus className="absolute -right-4 -top-4 h-8 w-8 text-primary/70" />
@@ -64,7 +64,7 @@ export function Hero() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="rounded-full px-7 bg-white/70 hover:bg-white"
+                className="rounded-full px-7 bg-background/70 hover:bg-background"
               >
                 <a href="#pricing">See pricing</a>
               </Button>

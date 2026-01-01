@@ -14,6 +14,16 @@ import { createNoteAction, deleteNotesAction } from "@/app/workspace/notes/actio
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuLabel,
@@ -21,6 +31,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 type NoteListItem = {
     id: string;
@@ -47,8 +58,12 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
     const [createError, setCreateError] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isDeleting, startDelete] = useTransition();
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [query, setQuery] = useState("");
 
     const billing = useBilling();
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const isCreateBlocked = useMemo(() => {
         if (billing.status !== "ready") return false;
@@ -56,15 +71,25 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
         return limit !== null && notes.length >= limit;
     }, [billing.entitlements?.notesLimit, billing.status, notes.length]);
 
+    const visibleNotes = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return notes;
+        return notes.filter((n) => (n.title || "Untitled").toLowerCase().includes(q));
+    }, [notes, query]);
+
     const handleCreateNote = () => {
         if (isCreateBlocked) return;
         startTransition(async () => {
             try {
                 setCreateError(null);
+                toast.loading("Creating note…", { id: "notes-create" });
                 const id = await createNoteAction();
+                toast.success("Note created", { id: "notes-create" });
                 router.push(`/workspace/notes/${id}`);
             } catch (err) {
-                setCreateError(err instanceof Error ? err.message : "Failed to create note");
+                const msg = err instanceof Error ? err.message : "Failed to create note";
+                toast.error(msg, { id: "notes-create" });
+                setCreateError(msg);
             }
         });
     };
@@ -83,15 +108,7 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
 
     const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
-        startDelete(async () => {
-            try {
-                await deleteNotesAction({ ids: Array.from(selectedIds) });
-                setSelectedIds(new Set());
-                router.refresh();
-            } catch (err) {
-                console.error("Failed to delete notes:", err);
-            }
-        });
+        setBulkDeleteOpen(true);
     };
 
     const handleClearSelection = () => {
@@ -126,7 +143,7 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
             secondaryListGroups={sidebarGroups}
         >
             {(isCreateBlocked || createError) && (
-                <div className="mb-6 rounded-2xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+                <div className="mb-6 rounded-2xl border border-border bg-background/60 p-4 shadow-sm backdrop-blur">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-sm font-semibold">You’ve hit the Free plan limit</p>
@@ -142,8 +159,14 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
             <div className="mb-6 flex items-center gap-3 border-b pb-6">
                 <div className="relative w-full max-w-2xl">
                     <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
+                    <label htmlFor="notes-search" className="sr-only">
+                        Search notes
+                    </label>
                     <Input
+                        id="notes-search"
                         placeholder="Search anything..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
                         className={cn(
                             "h-12 border-0 bg-transparent pl-8 text-2xl font-medium shadow-none",
                             "placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -178,10 +201,30 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
 
                 <div className="flex items-center justify-end gap-2">
                     <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "grid" && "bg-muted")}
+                            aria-label="Grid view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "grid");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <LayoutGrid className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "list" && "bg-muted")}
+                            aria-label="List view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "list");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <List className="h-4 w-4" />
                         </Button>
                     </div>
@@ -203,13 +246,20 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {notes.map((note) => (
+            <div
+                className={cn(
+                    view === "grid"
+                        ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                        : "space-y-2"
+                )}
+            >
+                {visibleNotes.map((note) => (
                     <ResourceCard
                         key={note.id}
                         title={note.title || "Untitled"}
                         tagLabel="Notes"
                         icon={<PenSquare className="h-3 w-3" />}
+                        variant={view}
                         selected={selectedIds.has(note.id)}
                         onSelectChange={(selected) => {
                             if (selected) {
@@ -237,6 +287,45 @@ export function NotesSection({ notes, sortOrder, sidebarGroups }: NotesSectionPr
                 onClearSelection={handleClearSelection}
                 isDeleting={isDeleting}
             />
+
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete {selectedIds.size} {selectedIds.size === 1 ? "note" : "notes"}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the selected notes.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting || selectedIds.size === 0}
+                            onClick={() => {
+                                const ids = Array.from(selectedIds);
+                                startDelete(async () => {
+                                    try {
+                                        toast.loading("Deleting notes…", { id: "notes-bulk-delete" });
+                                        await deleteNotesAction({ ids });
+                                        toast.success("Notes deleted", { id: "notes-bulk-delete" });
+                                        setBulkDeleteOpen(false);
+                                        setSelectedIds(new Set());
+                                        router.refresh();
+                                    } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete notes",
+                                            { id: "notes-bulk-delete" }
+                                        );
+                                    }
+                                });
+                            }}
+                        >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SectionShell>
     );
 }

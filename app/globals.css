@@ -3,6 +3,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "tldraw/tldraw.css";
+@import "@clerk/themes/shadcn.css";
 @layer theme, base, clerk, components, utilities;
 
 @custom-variant dark (&:is(.dark *));
@@ -49,12 +50,31 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --animate-pulse-slow: pulse-slow 3s ease-in-out infinite;
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
   @keyframes pulse-slow {
   0%, 100% {
     transform: translateX(-100%);
     }
   50% {
     transform: translateX(100%);
+    }
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
     }
   }
 }

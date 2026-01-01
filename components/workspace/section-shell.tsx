@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { SidebarContent } from "@/components/ui/sidebar";
 import { ChevronRight, PanelLeftOpen, PanelLeftClose, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useBilling } from "@/hooks/use-billing";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -117,6 +119,9 @@ export function SectionShell({
 }: SectionShellProps) {
     const crumb = breadcrumbLabel ?? sectionLabel;
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const billing = useBilling();
+    const planLabel =
+        billing.status === "ready" && billing.entitlements?.isPro ? "Pro" : "Free";
 
     return (
         <div className="flex h-svh w-full overflow-hidden">
@@ -168,7 +173,7 @@ export function SectionShell({
                                         {secondaryListGroups.map((group) =>
                                             group.items.length > 0 ? (
                                                 <div key={group.id} className="space-y-1">
-                                                    <div className="px-3 pb-1 text-[10px] font-medium tracking-wider text-muted-foreground/70 uppercase">
+                                                    <div className="px-3 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground/70 uppercase">
                                                         {group.label}
                                                     </div>
                                                     {group.items.map((item) => (
@@ -240,6 +245,8 @@ export function SectionShell({
                     sidebarOpen ? "px-6" : "pl-16 pr-6"
                 )}>
                     <div className="flex min-w-0 items-center gap-3">
+                        {/* Accessibility: ensure each workspace section has a semantic heading */}
+                        <h1 className="sr-only">{sectionLabel}</h1>
                         {breadcrumbs ?? (
                             <Breadcrumb>
                                 <BreadcrumbList>
@@ -262,8 +269,12 @@ export function SectionShell({
 
                         {showSearch && (
                             <div className="relative hidden md:block">
+                                <label htmlFor="workspace-search" className="sr-only">
+                                    Search your workspace
+                                </label>
                                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
+                                    id="workspace-search"
                                     placeholder="Search your workspace..."
                                     className="h-9 w-64 bg-background pl-8 text-xs"
                                 />
@@ -272,6 +283,20 @@ export function SectionShell({
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <ThemeToggle className="rounded-full" />
+                        <span
+                            className={cn(
+                                "inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-medium leading-none",
+                                billing.status !== "ready" && "opacity-70",
+                                planLabel === "Pro"
+                                    ? "border-primary/30 bg-primary/10 text-primary"
+                                    : "border-border bg-muted/40 text-muted-foreground"
+                            )}
+                            aria-label={`Current plan: ${planLabel}`}
+                            title={`Current plan: ${planLabel}`}
+                        >
+                            {planLabel}
+                        </span>
                         {topBarRight}
                         {primaryActionLabel && (
                             <Button

@@ -23,7 +23,7 @@ import {
   Grid2X2,
   FileUp,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { UserControl } from "@/components/clerk/user-control";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -43,6 +43,7 @@ import { createCanvasAction } from "@/app/workspace/canvas/actions";
 import { uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
+import { toast } from "sonner";
 
 const mainNav = [
   { title: "Home", href: "/workspace", icon: Home },
@@ -61,7 +62,6 @@ export function AppSidebar() {
   const billing = useBilling();
   const [limitOpen, setLimitOpen] = useState(false);
   const [limitText, setLimitText] = useState<string | null>(null);
-
   const handleCreateNote = () => {
     if (billing.status === "ready" && billing.entitlements) {
       const limit = billing.entitlements.notesLimit;
@@ -73,9 +73,12 @@ export function AppSidebar() {
     }
     startCreate(async () => {
       try {
+        toast.loading("Creating note…", { id: "create-note" });
         const id = await createNoteAction();
+        toast.success("Note created", { id: "create-note" });
         router.push(`/workspace/notes/${id}`);
       } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to create note", { id: "create-note" });
         setLimitText(err instanceof Error ? err.message : "Failed to create note");
         setLimitOpen(true);
       }
@@ -93,9 +96,12 @@ export function AppSidebar() {
     }
     startCreate(async () => {
       try {
+        toast.loading("Creating canvas…", { id: "create-canvas" });
         const id = await createCanvasAction();
+        toast.success("Canvas created", { id: "create-canvas" });
         router.push(`/workspace/canvas/${id}`);
       } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to create canvas", { id: "create-canvas" });
         setLimitText(err instanceof Error ? err.message : "Failed to create canvas");
         setLimitOpen(true);
       }
@@ -134,12 +140,15 @@ export function AppSidebar() {
 
     startUpload(async () => {
       try {
+        toast.loading("Uploading…", { id: "upload-media" });
         const formData = new FormData();
         formData.append("file", file);
         await uploadMediaFileAction(formData);
+        toast.success("Uploaded", { id: "upload-media" });
         router.push("/workspace/media");
         router.refresh();
       } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to upload media", { id: "upload-media" });
         setLimitText(err instanceof Error ? err.message : "Failed to upload media");
         setLimitOpen(true);
       } finally {
@@ -162,6 +171,7 @@ export function AppSidebar() {
         className="hidden"
         onChange={handleFileChange}
         accept="image/*,video/*,audio/*,application/pdf"
+        aria-label="Choose a file to upload"
       />
       <TooltipProvider delayDuration={100}>
          <Sidebar
@@ -204,6 +214,7 @@ export function AppSidebar() {
                                   (isCreating || isUploading) && "opacity-50 cursor-not-allowed"
                                 )}
                                 disabled={isCreating || isUploading}
+                                aria-label="Create new item"
                               >
                                 <Plus className="h-4 w-4" />
                               </SidebarMenuButton>
@@ -264,8 +275,10 @@ export function AppSidebar() {
                                isActive={isActive}
                                className={cn(
                                  "group relative flex h-auto flex-col items-center justify-center gap-1.5 rounded-none py-2.5 text-xs",
-                                 "text-muted-foreground/90 transition-all duration-200",
-                                 !isActive && "hover:text-foreground"
+                                  // Override SidebarMenuButton's default hover/active background so only the icon wrapper highlights.
+                                  "hover:bg-transparent active:bg-transparent data-[active=true]:bg-transparent",
+                                  "text-muted-foreground/90 transition-all duration-200",
+                                  !isActive && "hover:text-foreground"
                                )}
                              >
                                <Link href={item.href} className="flex flex-col items-center gap-1.5 w-full">
@@ -288,7 +301,7 @@ export function AppSidebar() {
                                    )} />
                                  </span>
                                  <span className={cn(
-                                   "text-[10px] font-medium leading-tight tracking-tight transition-colors",
+                                   "text-[11px] font-medium leading-tight tracking-tight transition-colors",
                                    !isActive && "text-foreground/70",
                                    isActive && "text-foreground"
                                  )}>
@@ -320,13 +333,7 @@ export function AppSidebar() {
                  >
                    <div className="flex w-full items-center justify-center p-2">
                      <div className="rounded-xl p-2 backdrop-blur-sm border border-transparent bg-transparent transition-all duration-200 hover:border-transparent hover:scale-105 overflow-visible">
-                       <UserButton
-                         appearance={{
-                           elements: {
-                             avatarBox: "h-8 w-8 rounded-lg",
-                           },
-                         }}
-                       />
+                       <UserControl />
                      </div>
                    </div>
                  </SidebarMenuButton>

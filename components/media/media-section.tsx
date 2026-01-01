@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Image as ImageIcon, LayoutGrid, List, MoreHorizontal, Search, Trash2, Upload } from "lucide-react";
+import { Image as ImageIcon, LayoutGrid, List, Search, Upload } from "lucide-react";
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { ResourceCard } from "@/components/workspace/resource-card";
@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
@@ -37,9 +36,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { deleteMediaFileAction, deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
+import { toast } from "sonner";
 
 type MediaItem = {
     id: string;
@@ -84,29 +84,42 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [uploadOpen, setUploadOpen] = useState(false);
-    const [deleteId, setDeleteId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [isUploading, startUpload] = useTransition();
-    const [isDeleting, startDelete] = useTransition();
     const [isDeletingBulk, startDeleteBulk] = useTransition();
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const billing = useBilling();
     const [limitOpen, setLimitOpen] = useState(false);
     const [limitText, setLimitText] = useState<string | null>(null);
+    const [query, setQuery] = useState("");
 
     const previewId = searchParams.get("preview");
     const currentSort = searchParams.get("sort") ?? sortOrder;
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const selected = useMemo(
         () => (previewId ? mediaFiles.find((m) => m.id === previewId) ?? null : null),
         [mediaFiles, previewId]
     );
 
-    const deleteTarget = useMemo(
-        () => (deleteId ? mediaFiles.find((m) => m.id === deleteId) ?? null : null),
-        [mediaFiles, deleteId]
-    );
+    const selectedMedia = useMemo(() => {
+        if (selectedIds.size === 0) return [];
+        const ids = selectedIds;
+        return mediaFiles.filter((m) => ids.has(m.id));
+    }, [mediaFiles, selectedIds]);
+
+    const visibleMediaFiles = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return mediaFiles;
+        return mediaFiles.filter((m) => {
+            const name = m.name.toLowerCase();
+            const kind = kindLabel(m.mimeType).toLowerCase();
+            return name.includes(q) || kind.includes(q);
+        });
+    }, [mediaFiles, query]);
 
     const onPickFile = (file: File) => {
         const storageBlocked =
@@ -126,27 +139,23 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
 
         startUpload(async () => {
             try {
+                toast.loading("Uploading…", { id: "media-upload" });
                 await uploadMediaFileAction(formData);
+                toast.success("Uploaded", { id: "media-upload" });
                 setUploadOpen(false);
                 router.refresh();
             } catch (e) {
                 console.error(e);
-                setUploadError(e instanceof Error ? e.message : "Upload failed");
+                const msg = e instanceof Error ? e.message : "Upload failed";
+                toast.error(msg, { id: "media-upload" });
+                setUploadError(msg);
             }
         });
     };
 
     const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
-        startDeleteBulk(async () => {
-            try {
-                await deleteMediaFilesAction({ ids: Array.from(selectedIds) });
-                setSelectedIds(new Set());
-                router.refresh();
-            } catch (err) {
-                console.error("Failed to delete media files:", err);
-            }
-        });
+        setBulkDeleteOpen(true);
     };
 
     const handleClearSelection = () => {
@@ -199,8 +208,14 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                 <div className="mb-6 flex items-center gap-3 border-b pb-6">
                     <div className="relative w-full max-w-2xl">
                         <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
+                        <label htmlFor="media-search" className="sr-only">
+                            Search media
+                        </label>
                         <Input
+                            id="media-search"
                             placeholder="Search anything..."
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
                             className={cn(
                                 "h-12 border-0 bg-transparent pl-8 text-2xl font-medium shadow-none",
                                 "placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -235,10 +250,30 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
 
                     <div className="flex items-center justify-end gap-2">
                         <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                            <Button variant="ghost" size="icon-sm" className="rounded-full">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className={cn("rounded-full", view === "grid" && "bg-muted")}
+                                aria-label="Grid view"
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("view", "grid");
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
                                 <LayoutGrid className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon-sm" className="rounded-full">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className={cn("rounded-full", view === "list" && "bg-muted")}
+                                aria-label="List view"
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("view", "list");
+                                    router.replace(`${pathname}?${params.toString()}`);
+                                }}
+                            >
                                 <List className="h-4 w-4" />
                             </Button>
                         </div>
@@ -267,8 +302,12 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                    {mediaFiles.map((m) => {
+                <div className={cn(
+                    view === "grid"
+                        ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                        : "space-y-2"
+                )}>
+                    {visibleMediaFiles.map((m) => {
                         const type = kindLabel(m.mimeType);
                         const size = formatBytes(m.size);
                         return (
@@ -277,6 +316,7 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                                     title={m.name}
                                     tagLabel={`${type}${size ? ` • ${size}` : ""}`}
                                     icon={<ImageIcon className="h-3 w-3" />}
+                                    variant={view}
                                     selected={selectedIds.has(m.id)}
                                     onSelectChange={(selected) => {
                                         if (selected) {
@@ -301,34 +341,6 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                                         "hover:border-border/80"
                                     )}
                                 />
-
-                                <div className="absolute right-2 top-2">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon-sm"
-                                                className="rounded-full bg-background/80 backdrop-blur"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem
-                                                className="text-destructive focus:text-destructive"
-                                                onSelect={(e) => {
-                                                    e.preventDefault();
-                                                    setDeleteId(m.id);
-                                                }}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
                             </div>
                         );
                     })}
@@ -358,6 +370,7 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                         className="hidden"
                         accept="image/*,application/pdf,audio/*"
                         disabled={isUploading}
+                        aria-label="Choose a file to upload"
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) onPickFile(file);
@@ -467,37 +480,56 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
                 </DialogContent>
             </Dialog>
 
-            {/* Delete confirm */}
+            {/* Bulk delete confirm (selected items) */}
             <AlertDialog
-                open={!!deleteTarget}
+                open={bulkDeleteOpen}
                 onOpenChange={(open) => {
-                    if (!open) setDeleteId(null);
+                    setBulkDeleteOpen(open);
                 }}
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete file?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            Delete {selectedIds.size} {selectedIds.size === 1 ? "file" : "files"}?
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            {deleteTarget?.name ? `This will permanently delete “${deleteTarget.name}”.` : "This will permanently delete this file."}
+                            This will permanently delete the selected files.
+                            {selectedMedia.length > 0 && (
+                                <>
+                                    {" "}
+                                    ({selectedMedia.slice(0, 3).map((m) => m.name).join(", ")}
+                                    {selectedMedia.length > 3 ? ", …" : ""})
+                                </>
+                            )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isDeletingBulk}>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            disabled={isDeleting || !deleteTarget}
+                            disabled={isDeletingBulk || selectedIds.size === 0}
                             onClick={() => {
-                                if (!deleteTarget) return;
-                                startDelete(async () => {
-                                    await deleteMediaFileAction({ mediaId: deleteTarget.id });
-                                    setDeleteId(null);
-                                    if (previewId === deleteTarget.id) {
-                                        router.replace("/workspace/media");
+                                const ids = Array.from(selectedIds);
+                                startDeleteBulk(async () => {
+                                    try {
+                                        toast.loading("Deleting files…", { id: "media-bulk-delete" });
+                                        await deleteMediaFilesAction({ ids });
+                                        toast.success("Files deleted", { id: "media-bulk-delete" });
+                                        setBulkDeleteOpen(false);
+                                        setSelectedIds(new Set());
+                                        if (previewId && ids.includes(previewId)) {
+                                            router.replace("/workspace/media");
+                                        }
+                                        router.refresh();
+                                    } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete files",
+                                            { id: "media-bulk-delete" }
+                                        );
                                     }
-                                    router.refresh();
                                 });
                             }}
                         >
-                            {isDeleting ? "Deleting…" : "Delete"}
+                            {isDeletingBulk ? "Deleting…" : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

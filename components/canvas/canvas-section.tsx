@@ -14,6 +14,16 @@ import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas
 import { useBilling } from "@/hooks/use-billing";
 import { UpgradeToProButton } from "@/components/billing/upgrade-to-pro-button";
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuLabel,
@@ -21,6 +31,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 type CanvasListItem = {
     id: string;
@@ -47,8 +58,12 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
     const [createError, setCreateError] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isDeleting, startDelete] = useTransition();
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [query, setQuery] = useState("");
 
     const billing = useBilling();
+    const viewParam = searchParams.get("view");
+    const view: "grid" | "list" = viewParam === "list" ? "list" : "grid";
 
     const isCreateBlocked = useMemo(() => {
         if (billing.status !== "ready") return false;
@@ -56,30 +71,32 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
         return limit !== null && canvases.length >= limit;
     }, [billing.entitlements?.canvasesLimit, billing.status, canvases.length]);
 
+    const visibleCanvases = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return canvases;
+        return canvases.filter((c) => (c.title || "Untitled").toLowerCase().includes(q));
+    }, [canvases, query]);
+
     const handleCreateCanvas = () => {
         if (isCreateBlocked) return;
         startTransition(async () => {
             try {
                 setCreateError(null);
+                toast.loading("Creating canvas…", { id: "canvas-create" });
                 const id = await createCanvasAction();
+                toast.success("Canvas created", { id: "canvas-create" });
                 router.push(`/workspace/canvas/${id}`);
             } catch (err) {
-                setCreateError(err instanceof Error ? err.message : "Failed to create canvas");
+                const msg = err instanceof Error ? err.message : "Failed to create canvas";
+                toast.error(msg, { id: "canvas-create" });
+                setCreateError(msg);
             }
         });
     };
 
     const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
-        startDelete(async () => {
-            try {
-                await deleteCanvasesAction({ ids: Array.from(selectedIds) });
-                setSelectedIds(new Set());
-                router.refresh();
-            } catch (err) {
-                console.error("Failed to delete canvases:", err);
-            }
-        });
+        setBulkDeleteOpen(true);
     };
 
     const handleClearSelection = () => {
@@ -114,7 +131,7 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
             secondaryListGroups={sidebarGroups}
         >
             {(isCreateBlocked || createError) && (
-                <div className="mb-6 rounded-2xl border border-border bg-white/60 p-4 shadow-sm backdrop-blur">
+                <div className="mb-6 rounded-2xl border border-border bg-background/60 p-4 shadow-sm backdrop-blur">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-sm font-semibold">You’ve hit the Free plan limit</p>
@@ -130,8 +147,14 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
             <div className="mb-6 flex items-center gap-3 border-b pb-6">
                 <div className="relative w-full max-w-2xl">
                     <Search className="pointer-events-none absolute left-0 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/60" />
+                    <label htmlFor="canvas-search" className="sr-only">
+                        Search canvases
+                    </label>
                     <Input
+                        id="canvas-search"
                         placeholder="Search anything..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
                         className={cn(
                             "h-12 border-0 bg-transparent pl-8 text-2xl font-medium shadow-none",
                             "placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -166,10 +189,30 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
 
                 <div className="flex items-center justify-end gap-2">
                     <div className="hidden items-center gap-1 rounded-full border bg-background p-1 md:flex">
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "grid" && "bg-muted")}
+                            aria-label="Grid view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "grid");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <LayoutGrid className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon-sm" className="rounded-full">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn("rounded-full", view === "list" && "bg-muted")}
+                            aria-label="List view"
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams.toString());
+                                params.set("view", "list");
+                                router.replace(`${pathname}?${params.toString()}`);
+                            }}
+                        >
                             <List className="h-4 w-4" />
                         </Button>
                     </div>
@@ -190,13 +233,20 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                     </Button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {canvases.map((c) => (
+            <div
+                className={cn(
+                    view === "grid"
+                        ? "grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+                        : "space-y-2"
+                )}
+            >
+                {visibleCanvases.map((c) => (
                     <ResourceCard
                         key={c.id}
                         title={c.title || "Untitled"}
                         tagLabel="Canvas"
                         icon={<Grid2X2 className="h-3 w-3" />}
+                        variant={view}
                         selected={selectedIds.has(c.id)}
                         onSelectChange={(selected) => {
                             if (selected) {
@@ -224,6 +274,45 @@ export function CanvasSection({ canvases, sortOrder, sidebarGroups }: CanvasSect
                 onClearSelection={handleClearSelection}
                 isDeleting={isDeleting}
             />
+
+            <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete {selectedIds.size} {selectedIds.size === 1 ? "canvas" : "canvases"}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the selected canvases.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={isDeleting || selectedIds.size === 0}
+                            onClick={() => {
+                                const ids = Array.from(selectedIds);
+                                startDelete(async () => {
+                                    try {
+                                        toast.loading("Deleting canvases…", { id: "canvas-bulk-delete" });
+                                        await deleteCanvasesAction({ ids });
+                                        toast.success("Canvases deleted", { id: "canvas-bulk-delete" });
+                                        setBulkDeleteOpen(false);
+                                        setSelectedIds(new Set());
+                                        router.refresh();
+                                    } catch (err) {
+                                        toast.error(
+                                            err instanceof Error ? err.message : "Failed to delete canvases",
+                                            { id: "canvas-bulk-delete" }
+                                        );
+                                    }
+                                });
+                            }}
+                        >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SectionShell>
     );
 }

@@ -15,7 +15,7 @@ export function ChatPlaceholder() {
     <div className="flex h-full flex-col">
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-3xl px-6">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
             <Sparkles className="h-4 w-4 text-primary" />
             <span>Coming soon</span>
           </div>
@@ -23,7 +23,7 @@ export function ChatPlaceholder() {
           <h1 className="mb-8 text-2xl font-semibold">Start a new chat</h1>
           
           <div className="relative">
-            <div className="rounded-3xl border border-border bg-white/60 shadow-sm backdrop-blur">
+            <div className="rounded-3xl border border-border bg-background/60 shadow-sm backdrop-blur">
               <div className="relative">
                 <Input
                   placeholder="Ask anything..."

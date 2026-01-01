@@ -8,7 +8,19 @@ import { Grid2X2, MoreHorizontal, PlusSquare, Trash2 } from "lucide-react";
 
 import { SectionShell } from "@/components/workspace/section-shell";
 import { InlineTitle } from "@/components/workspace/inline-title";
-import { CanvasEditor } from "@/components/canvas/canvas-editor";
+import dynamic from "next/dynamic";
+const CanvasEditor = dynamic(
+    () => import("@/components/canvas/canvas-editor").then((m) => m.CanvasEditor),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="p-6 text-sm text-muted-foreground">
+                Loading canvas…
+            </div>
+        ),
+    }
+);
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
     Breadcrumb,
@@ -163,9 +175,18 @@ export function CanvasDetailView(props: {
                                     disabled={isDeleting}
                                     onClick={() => {
                                         startDelete(async () => {
-                                            await deleteCanvasAction({ id: canvasId });
-                                            setConfirmOpen(false);
-                                            router.replace("/workspace/canvas");
+                                            try {
+                                                toast.loading("Deleting canvas…", { id: "canvas-delete" });
+                                                await deleteCanvasAction({ id: canvasId });
+                                                toast.success("Canvas deleted", { id: "canvas-delete" });
+                                                setConfirmOpen(false);
+                                                router.replace("/workspace/canvas");
+                                            } catch (err) {
+                                                toast.error(
+                                                    err instanceof Error ? err.message : "Failed to delete canvas",
+                                                    { id: "canvas-delete" }
+                                                );
+                                            }
                                         });
                                     }}
                                 >

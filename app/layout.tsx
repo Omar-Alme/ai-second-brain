@@ -1,11 +1,9 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import {
-  ClerkProvider,
-} from "@clerk/nextjs";
 import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import "tldraw/tldraw.css";
+import { Providers } from "@/components/providers";
 
 const nunitoSans = Nunito_Sans({
   variable: "--font-sans",
@@ -33,14 +31,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider signInFallbackRedirectUrl="/workspace" afterSignOutUrl="/">
-      <html lang="en" className={nunitoSans.variable}>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className={nunitoSans.variable} suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   );
 }
