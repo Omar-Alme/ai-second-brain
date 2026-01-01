@@ -36,7 +36,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { deleteMediaFilesAction } from "@/app/workspace/media/actions";
+import { uploadMediaDirect } from "@/lib/uploads/media-direct-upload";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 import { toast } from "sonner";
@@ -133,14 +134,12 @@ export function MediaSection({ mediaFiles, sortOrder, sidebarGroups }: MediaSect
             return;
         }
 
-        const formData = new FormData();
-        formData.set("file", file);
         setUploadError(null);
 
         startUpload(async () => {
             try {
                 toast.loading("Uploading…", { id: "media-upload" });
-                await uploadMediaFileAction(formData);
+                await uploadMediaDirect(file);
                 toast.success("Uploaded", { id: "media-upload" });
                 setUploadOpen(false);
                 router.refresh();

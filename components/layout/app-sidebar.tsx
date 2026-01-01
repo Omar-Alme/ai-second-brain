@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createNoteAction } from "@/app/workspace/notes/actions";
 import { createCanvasAction } from "@/app/workspace/canvas/actions";
-import { uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { uploadMediaDirect } from "@/lib/uploads/media-direct-upload";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 import { toast } from "sonner";
@@ -121,7 +121,8 @@ export function AppSidebar() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const inputEl = e.currentTarget;
+    const file = inputEl.files?.[0];
     if (!file) return;
 
     if (billing.status === "ready" && billing.entitlements) {
@@ -132,7 +133,7 @@ export function AppSidebar() {
         if (currentStorageBytes + file.size > limitBytes) {
           setLimitText(`You've reached the Free plan storage limit (${limitGb}GB). Upgrade to Pro for higher storage limits.`);
           setLimitOpen(true);
-          e.target.value = "";
+          inputEl.value = "";
           return;
         }
       }
@@ -141,9 +142,7 @@ export function AppSidebar() {
     startUpload(async () => {
       try {
         toast.loading("Uploading…", { id: "upload-media" });
-        const formData = new FormData();
-        formData.append("file", file);
-        await uploadMediaFileAction(formData);
+        await uploadMediaDirect(file);
         toast.success("Uploaded", { id: "upload-media" });
         router.push("/workspace/media");
         router.refresh();
@@ -152,7 +151,7 @@ export function AppSidebar() {
         setLimitText(err instanceof Error ? err.message : "Failed to upload media");
         setLimitOpen(true);
       } finally {
-        e.target.value = "";
+        inputEl.value = "";
       }
     });
   };
