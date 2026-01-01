@@ -48,7 +48,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { createNoteAction, deleteNotesAction } from "@/app/workspace/notes/actions";
 import { createCanvasAction, deleteCanvasesAction } from "@/app/workspace/canvas/actions";
-import { deleteMediaFilesAction, uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { deleteMediaFilesAction } from "@/app/workspace/media/actions";
+import { uploadMediaDirect } from "@/lib/uploads/media-direct-upload";
 import { useBilling } from "@/hooks/use-billing";
 import { LimitReachedDialog } from "@/components/billing/limit-reached-dialog";
 import { toast } from "sonner";
@@ -448,7 +449,8 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                         disabled={isUploading}
                         aria-label="Choose a file to upload"
                         onChange={(e) => {
-                            const file = e.target.files?.[0];
+                            const inputEl = e.currentTarget;
+                            const file = inputEl.files?.[0];
                             if (!file) return;
                             const storageBlocked =
                                 billing.status === "ready" &&
@@ -457,18 +459,16 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                             if (storageBlocked) {
                                 setLimitText("You’ve reached your storage limit. Upgrade to Pro for more storage.");
                                 setLimitOpen(true);
-                                e.currentTarget.value = "";
+                                inputEl.value = "";
                                 return;
                             }
 
-                            const formData = new FormData();
-                            formData.set("file", file);
                             setUploadError(null);
 
                             startUpload(async () => {
                                 try {
                                     toast.loading("Uploading…", { id: "home-upload" });
-                                    await uploadMediaFileAction(formData);
+                                    await uploadMediaDirect(file);
                                     toast.success("Uploaded", { id: "home-upload" });
                                     setUploadOpen(false);
                                     router.refresh();
@@ -478,7 +478,7 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                     toast.error(msg, { id: "home-upload" });
                                     setUploadError(msg);
                                 } finally {
-                                    e.currentTarget.value = "";
+                                    inputEl.value = "";
                                 }
                             });
                         }}
@@ -503,13 +503,11 @@ export function HomeFeed(props: { items: HomeItem[]; nowMs: number }) {
                                 setLimitOpen(true);
                                 return;
                             }
-                            const formData = new FormData();
-                            formData.set("file", file);
                             setUploadError(null);
                             startUpload(async () => {
                                 try {
                                     toast.loading("Uploading…", { id: "home-upload" });
-                                    await uploadMediaFileAction(formData);
+                                    await uploadMediaDirect(file);
                                     toast.success("Uploaded", { id: "home-upload" });
                                     setUploadOpen(false);
                                     router.refresh();

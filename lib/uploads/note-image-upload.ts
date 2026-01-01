@@ -1,6 +1,6 @@
 "use client";
 
-import { uploadMediaFileAction } from "@/app/workspace/media/actions";
+import { uploadMediaDirect } from "@/lib/uploads/media-direct-upload";
 
 /**
  * Uploads an image for use inside Notes (Tiptap) and returns the public URL.
@@ -17,11 +17,8 @@ export async function uploadNoteImage(
   // We don't have streaming progress from the server action, but we can provide UX progress milestones.
   onProgress?.({ progress: 5 });
 
-  const formData = new FormData();
-  formData.set("file", file);
-
   onProgress?.({ progress: 20 });
-  const created = await uploadMediaFileAction(formData);
+  const created = await uploadMediaDirect(file);
   onProgress?.({ progress: 95 });
 
   if (!created?.url) throw new Error("Upload failed: No URL returned");
